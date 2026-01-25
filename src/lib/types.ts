@@ -10,6 +10,23 @@ export type ListingMedia = {
   sortOrder: number;
 };
 
+export type VerificationStatus = 'Unverified' | 'Pending' | 'Verified';
+
+export type ListingDocument = {
+  id: string;
+  name: string;
+  type: 'Registration' | 'COC' | 'Inspection' | 'Maintenance';
+  url: string;
+  createdAt: string;
+};
+
+export type InternalNote = {
+  id: string;
+  note: string;
+  authorId: string;
+  createdAt: string;
+};
+
 export type Listing = {
   id: string;
   title: string;
@@ -26,6 +43,10 @@ export type Listing = {
   createdAt: string;
   media: ListingMedia[];
   extraNotes?: string;
+  // Phase 3
+  verificationStatus: VerificationStatus;
+  documents: ListingDocument[];
+  internalNotes: InternalNote[];
 };
 
 export type UserAccountType = 'individual' | 'company';
@@ -70,6 +91,8 @@ export type RFQ = {
   notes?: string;
   status: RFQStatus;
   createdAt: string;
+  // Phase 3
+  internalOpsNotes?: string;
 };
 
 export type RFQMessage = {

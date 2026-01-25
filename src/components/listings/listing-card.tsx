@@ -5,16 +5,29 @@ import type { Listing } from '@/lib/types';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Bookmark, MapPin } from 'lucide-react';
+import { Bookmark, MapPin, ShieldCheck } from 'lucide-react';
+import { Progress } from '../ui/progress';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
+import { cn } from '@/lib/utils';
 
 interface ListingCardProps {
   listing: Listing;
   isMember: boolean;
 }
 
+const getCompleteness = (listing: Listing) => {
+    let score = 0;
+    if (listing.media.length > 0) score += 25;
+    if (listing.specs.length > 2) score += 25;
+    if (listing.verificationStatus === 'Verified') score += 25;
+    if (listing.documents.length > 0) score += 25;
+    return score;
+}
+
 export default function ListingCard({ listing, isMember }: ListingCardProps) {
   const keySpecs = listing.specs.slice(0, isMember ? 3 : 2);
   const placeholderImage = listing.media[0] || { url: 'https://picsum.photos/seed/placeholder/600/400', imageHint: 'placeholder' };
+  const completeness = getCompleteness(listing);
 
   return (
     <Card className="overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1 flex flex-col">
@@ -28,9 +41,17 @@ export default function ListingCard({ listing, isMember }: ListingCardProps) {
             data-ai-hint={placeholderImage.imageHint}
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
           />
-          {listing.visibility === 'members' && (
-             <Badge variant="default" className="absolute top-2 left-2 bg-accent text-accent-foreground">Member Only</Badge>
-          )}
+          <div className="absolute top-2 left-2 right-2 flex justify-between items-start">
+            {listing.verificationStatus === 'Verified' ? (
+                <Badge variant="secondary" className="bg-white/80 backdrop-blur-sm text-green-700 font-medium border-green-200 shadow-sm">
+                    <ShieldCheck className="h-3.5 w-3.5 mr-1" />
+                    Verified Source
+                </Badge>
+            ) : <div />}
+            {listing.visibility === 'members' && (
+                <Badge variant="default" className="bg-accent text-accent-foreground">Member Only</Badge>
+            )}
+          </div>
         </div>
       </Link>
       <CardContent className="p-4 flex-1 flex flex-col">
@@ -57,6 +78,31 @@ export default function ListingCard({ listing, isMember }: ListingCardProps) {
             ))}
              <Badge variant="outline" className="font-normal bg-secondary/50">{listing.condition}</Badge>
           </div>
+          
+          {isMember && (
+            <TooltipProvider>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <div className="mt-4">
+                             <div className="flex justify-between items-center mb-1">
+                                <label className="text-xs font-medium text-muted-foreground">Completeness</label>
+                                <span className="text-xs font-semibold">{completeness}%</span>
+                            </div>
+                            <Progress value={completeness} className="h-2" />
+                        </div>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                        <p className="text-sm font-medium">Listing Completeness Score</p>
+                        <ul className="list-disc list-inside text-xs text-muted-foreground mt-1 space-y-1">
+                            <li className={cn(listing.media.length > 0 ? 'text-foreground' : '')}>Photos</li>
+                            <li className={cn(listing.specs.length > 2 ? 'text-foreground' : '')}>Key Specs</li>
+                            <li className={cn(listing.verificationStatus === 'Verified' ? 'text-foreground' : '')}>Verified Source</li>
+                            <li className={cn(listing.documents.length > 0 ? 'text-foreground' : '')}>Documents</li>
+                        </ul>
+                    </TooltipContent>
+                </Tooltip>
+            </TooltipProvider>
+          )}
         </div>
 
         <div className="mt-4 pt-4 border-t flex items-center justify-between">

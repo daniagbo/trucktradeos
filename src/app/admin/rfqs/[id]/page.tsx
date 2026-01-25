@@ -30,19 +30,30 @@ const findUserById = (userId: string): User | undefined => {
 export default function AdminRfqWorkspacePage() {
     const params = useParams();
     const rfqId = params.id as string;
-    const { getRfqById, updateRfqStatus, loading: rfqLoading } = useRfqs();
+    const { getRfqById, updateRfqStatus, updateRfqInternalNotes, loading: rfqLoading } = useRfqs();
     const { user: adminUser, loading: authLoading } = useAuth();
     const router = useRouter();
 
     const rfq = getRfqById(rfqId);
     const buyer = rfq ? findUserById(rfq.userId) : undefined;
     const loading = rfqLoading || authLoading;
+    
+    const [internalNote, setInternalNote] = useState(rfq?.internalOpsNotes || '');
 
     useEffect(() => {
         if (!loading && (!adminUser || adminUser.role !== 'admin')) {
             router.push(`/login?redirect=/admin/rfqs/${rfqId}`);
         }
-    }, [loading, adminUser, rfqId, router]);
+        if (rfq) {
+            setInternalNote(rfq.internalOpsNotes || '');
+        }
+    }, [loading, adminUser, rfqId, router, rfq]);
+
+    const handleSaveNote = () => {
+        if (rfq) {
+            updateRfqInternalNotes(rfq.id, internalNote);
+        }
+    };
     
     if (loading || !rfq || !adminUser) {
         return <div className="container py-8"><Skeleton className="h-screen w-full" /></div>
@@ -76,8 +87,15 @@ export default function AdminRfqWorkspacePage() {
                      <Card>
                         <CardHeader><CardTitle>Internal Notes</CardTitle></CardHeader>
                         <CardContent>
-                            <Textarea placeholder="Add private notes for your team here..." rows={5} />
-                            <Button className="mt-2" disabled>Save Note (Phase 2)</Button>
+                            <Textarea 
+                                placeholder="Add private notes for your team here..." 
+                                rows={5}
+                                value={internalNote}
+                                onChange={(e) => setInternalNote(e.target.value)} 
+                            />
+                            <Button className="mt-2" onClick={handleSaveNote} disabled={internalNote === (rfq.internalOpsNotes || '')}>
+                                Save Note
+                            </Button>
                         </CardContent>
                     </Card>
                 </div>

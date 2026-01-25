@@ -17,6 +17,7 @@ export const mockRfqs: RFQ[] = [
         notes: 'Looking for a reliable truck for international routes. The referenced listing is a good example of what I need.',
         status: 'Received',
         createdAt: new Date('2024-07-28T10:00:00Z').toISOString(),
+        internalOpsNotes: 'Buyer seems serious. Have a good match in inventory for this one. Should prepare an offer.',
     },
     {
         id: 'rfq-2',
@@ -31,6 +32,7 @@ export const mockRfqs: RFQ[] = [
         notes: 'Need this for a project starting next month. Open to different brands but prefer CAT or Komatsu.',
         status: 'In progress',
         createdAt: new Date('2024-07-29T14:30:00Z').toISOString(),
+        internalOpsNotes: 'Urgent request. Need to check with suppliers in Texas for availability.',
     }
 ];
 

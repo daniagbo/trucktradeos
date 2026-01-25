@@ -15,6 +15,7 @@ interface RfqsContextType {
   getMessagesForRfq: (rfqId: string) => RFQMessage[];
   addRfq: (rfqData: Omit<RFQ, 'id' | 'createdAt' | 'status'>) => Promise<RFQ>;
   updateRfqStatus: (rfqId: string, status: RFQStatus) => void;
+  updateRfqInternalNotes: (rfqId: string, notes: string) => void;
   addMessage: (messageData: Omit<RFQMessage, 'id' | 'createdAt'>) => void;
 }
 
@@ -27,6 +28,7 @@ export const RfqsContext = createContext<RfqsContextType>({
   getMessagesForRfq: () => [],
   addRfq: async () => ({} as RFQ),
   updateRfqStatus: () => {},
+  updateRfqInternalNotes: () => {},
   addMessage: () => {},
 });
 
@@ -95,6 +97,13 @@ export const RfqsProvider = ({ children }: { children: ReactNode }) => {
     toast({ title: 'Status Updated', description: `RFQ status changed to ${status}.`});
   }, [rfqs, toast]);
 
+  const updateRfqInternalNotes = useCallback((rfqId: string, notes: string) => {
+    const updatedRfqs = rfqs.map(r => r.id === rfqId ? { ...r, internalOpsNotes: notes } : r);
+    setRfqs(updatedRfqs);
+    localStorage.setItem(RFQS_STORAGE_KEY, JSON.stringify(updatedRfqs));
+    toast({ title: 'Note Saved', description: 'Internal note has been updated.' });
+  }, [rfqs, toast]);
+
   const addMessage = useCallback((messageData: Omit<RFQMessage, 'id' | 'createdAt'>) => {
     const newMessage: RFQMessage = {
       ...messageData,
@@ -116,6 +125,7 @@ export const RfqsProvider = ({ children }: { children: ReactNode }) => {
     addRfq,
     updateRfqStatus,
     addMessage,
+    updateRfqInternalNotes,
   };
 
   return <RfqsContext.Provider value={value}>{children}</RfqsContext.Provider>;

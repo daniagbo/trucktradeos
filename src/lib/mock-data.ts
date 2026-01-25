@@ -68,7 +68,15 @@ export const mockListings: Listing[] = [
       { id: 'img2', url: getImage('truck-interior-1')?.imageUrl!, imageHint: getImage('truck-interior-1')?.imageHint!, sortOrder: 2 },
       { id: 'img3', url: getImage('truck-engine-1')?.imageUrl!, imageHint: getImage('truck-engine-1')?.imageHint!, sortOrder: 3 },
     ],
-    extraNotes: 'Available for inspection on weekdays. Price negotiable for serious buyers. Financing options available through our partners.'
+    extraNotes: 'Available for inspection on weekdays. Price negotiable for serious buyers. Financing options available through our partners.',
+    verificationStatus: 'Verified',
+    documents: [
+      { id: 'doc-1', name: 'Service History.pdf', type: 'Maintenance', url: '#', createdAt: new Date().toISOString() },
+      { id: 'doc-2', name: 'Registration.pdf', type: 'Registration', url: '#', createdAt: new Date().toISOString() },
+    ],
+    internalNotes: [
+        { id: 'note-1', note: 'Supplier is very reliable. Fast paperwork.', authorId: 'user-1', createdAt: new Date().toISOString() }
+    ],
   },
   {
     id: 'listing-2',
@@ -92,7 +100,10 @@ export const mockListings: Listing[] = [
     media: [
       { id: 'img4', url: getImage('truck-2')?.imageUrl!, imageHint: getImage('truck-2')?.imageHint!, sortOrder: 1 },
     ],
-    extraNotes: 'Tires replaced 6 months ago. Minor cosmetic wear on the driver side door. Full documentation available for members.'
+    extraNotes: 'Tires replaced 6 months ago. Minor cosmetic wear on the driver side door. Full documentation available for members.',
+    verificationStatus: 'Pending',
+    documents: [],
+    internalNotes: [],
   },
   {
     id: 'listing-3',
@@ -116,7 +127,12 @@ export const mockListings: Listing[] = [
     media: [
       { id: 'img5', url: getImage('equipment-1')?.imageUrl!, imageHint: getImage('equipment-1')?.imageHint!, sortOrder: 1 },
     ],
-    extraNotes: 'Hydraulics recently serviced. Available for immediate pickup.'
+    extraNotes: 'Hydraulics recently serviced. Available for immediate pickup.',
+    verificationStatus: 'Unverified',
+    documents: [
+        { id: 'doc-3', name: 'Inspection Report Q3.pdf', type: 'Inspection', url: '#', createdAt: new Date().toISOString() }
+    ],
+    internalNotes: [],
   },
   {
     id: 'listing-4',
@@ -138,7 +154,10 @@ export const mockListings: Listing[] = [
     media: [
       { id: 'img6', url: getImage('trailer-1')?.imageUrl!, imageHint: getImage('trailer-1')?.imageHint!, sortOrder: 1 },
     ],
-    extraNotes: 'Inspection reports available upon request for members.'
+    extraNotes: 'Inspection reports available upon request for members.',
+    verificationStatus: 'Verified',
+    documents: [],
+    internalNotes: [],
   },
   {
     id: 'listing-5',
@@ -161,6 +180,13 @@ export const mockListings: Listing[] = [
     media: [
         { id: 'img7', url: getImage('equipment-2')?.imageUrl!, imageHint: getImage('equipment-2')?.imageHint!, sortOrder: 1 },
     ],
-    extraNotes: 'This listing is only visible to logged-in members. Full maintenance logs are attached as documents.'
+    extraNotes: 'This listing is only visible to logged-in members. Full maintenance logs are attached as documents.',
+    verificationStatus: 'Verified',
+    documents: [
+        { id: 'doc-4', name: 'Maintenance Log.csv', type: 'Maintenance', url: '#', createdAt: new Date().toISOString() }
+    ],
+    internalNotes: [
+        { id: 'note-2', note: 'This is a high-demand item, price is firm.', authorId: 'user-1', createdAt: new Date().toISOString() }
+    ],
   },
 ];

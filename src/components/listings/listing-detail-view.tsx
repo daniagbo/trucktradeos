@@ -9,8 +9,63 @@ import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Table, TableBody, TableCell, TableRow } from '../ui/table';
-import { FileText, Info, Lock, MapPin } from 'lucide-react';
+import { FileText, Info, Lock, MapPin, ShieldCheck, Download, CheckCircle } from 'lucide-react';
 import Link from 'next/link';
+import { VerificationStatus, Listing } from '@/lib/types';
+import { cn } from '@/lib/utils';
+import { Progress } from '../ui/progress';
+
+const getCompleteness = (listing: Listing) => {
+    let score = 0;
+    if (listing.media.length > 0) score += 25;
+    if (listing.specs.length > 2) score += 25;
+    if (listing.verificationStatus === 'Verified') score += 25;
+    if (listing.documents.length > 0) score += 25;
+    return score;
+}
+
+const VerificationBadge = ({ status }: { status: VerificationStatus }) => {
+    if (status === 'Verified') {
+        return <Badge variant="outline" className="bg-green-100 text-green-800 border-green-200"><ShieldCheck className="h-4 w-4 mr-1"/>Verified Source</Badge>
+    }
+    if (status === 'Pending') {
+        return <Badge variant="outline" className="bg-yellow-100 text-yellow-800 border-yellow-200">Verification Pending</Badge>
+    }
+    return <Badge variant="outline">Unverified</Badge>
+}
+
+const ListingCompleteness = ({ listing }: { listing: Listing }) => {
+    const completeness = getCompleteness(listing);
+    const items = [
+        { label: 'Photos included', complete: listing.media.length > 0 },
+        { label: 'Key specifications listed', complete: listing.specs.length > 2 },
+        { label: 'Source is verified', complete: listing.verificationStatus === 'Verified' },
+        { label: 'Documents available', complete: listing.documents.length > 0 },
+    ];
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-xl font-headline">
+                    Listing Completeness
+                </CardTitle>
+            </CardHeader>
+            <CardContent>
+                <div className="flex items-center gap-4 mb-4">
+                    <Progress value={completeness} className="h-2" />
+                    <span className="font-bold text-lg">{completeness}%</span>
+                </div>
+                <ul className="space-y-2">
+                    {items.map(item => (
+                        <li key={item.label} className="flex items-center text-sm">
+                            <CheckCircle className={cn("h-4 w-4 mr-2", item.complete ? "text-green-500" : "text-muted-foreground/50")} />
+                            <span className={cn(item.complete ? "text-foreground" : "text-muted-foreground")}>{item.label}</span>
+                        </li>
+                    ))}
+                </ul>
+            </CardContent>
+        </Card>
+    )
+}
 
 export default function ListingDetailView({ listingId }: { listingId: string }) {
   const { getListing, loading: listingsLoading } = useListings();
@@ -46,7 +101,7 @@ export default function ListingDetailView({ listingId }: { listingId: string }) 
   }
 
   const GatedContent = ({ children, title, icon: Icon }: {children: React.ReactNode, title: string, icon: React.ElementType}) => (
-    <Card className="bg-secondary/50">
+    <Card className="bg-card">
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-xl font-headline">
           <Icon className="h-5 w-5 text-primary" />
@@ -76,9 +131,10 @@ export default function ListingDetailView({ listingId }: { listingId: string }) 
       <div className="grid md:grid-cols-3 gap-8 lg:gap-12">
         <div className="md:col-span-2 space-y-8">
           <div>
-            <div className="flex flex-wrap gap-2 mb-2">
+            <div className="flex flex-wrap gap-2 mb-2 items-center">
                 <Badge variant="secondary">{listing.category}</Badge>
                 <Badge variant="outline">{listing.condition}</Badge>
+                <VerificationBadge status={listing.verificationStatus} />
             </div>
             <h1 className="font-headline text-3xl md:text-4xl font-bold tracking-tight">{listing.title}</h1>
             <div className="flex items-center text-muted-foreground text-base mt-2">
@@ -88,6 +144,8 @@ export default function ListingDetailView({ listingId }: { listingId: string }) 
           </div>
 
           <ListingGallery media={listing.media} />
+          
+          <ListingCompleteness listing={listing} />
 
           <Card>
             <CardHeader>
@@ -117,8 +175,21 @@ export default function ListingDetailView({ listingId }: { listingId: string }) 
           </Card>
           
           <GatedContent title="Documents" icon={FileText}>
-              <p className="text-muted-foreground">All relevant documents are available for verified members. This may include service history, inspection reports, and titles.</p>
-              <Button className="mt-4" disabled>Download Documents (Phase 2)</Button>
+              <div className="space-y-2">
+                  {listing.documents.length > 0 ? (
+                      listing.documents.map(doc => (
+                        <a key={doc.id} href={doc.url} target="_blank" rel="noreferrer" className="flex items-center justify-between p-3 rounded-md border hover:bg-secondary transition-colors">
+                            <div>
+                                <p className="font-medium">{doc.name}</p>
+                                <p className="text-sm text-muted-foreground">{doc.type} - Added {new Date(doc.createdAt).toLocaleDateString()}</p>
+                            </div>
+                            <Download className="h-5 w-5 text-muted-foreground" />
+                        </a>
+                      ))
+                  ) : (
+                    <p className="text-muted-foreground text-sm">No documents have been uploaded for this listing yet.</p>
+                  )}
+              </div>
           </GatedContent>
 
           <GatedContent title="Extra Notes" icon={Info}>

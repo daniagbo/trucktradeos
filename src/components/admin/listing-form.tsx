@@ -9,14 +9,15 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import type { Listing, ListingMedia, Spec } from '@/lib/types';
+import type { Listing, ListingMedia, Spec, ListingDocument, InternalNote } from '@/lib/types';
 import { useListings } from '@/hooks/use-listings';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, PlusCircle, Sparkles, Trash2, X } from 'lucide-react';
+import { FileText, Loader2, PlusCircle, Sparkles, Trash2, X } from 'lucide-react';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { enhanceWithAI } from '@/lib/actions';
 import { useState } from 'react';
+import { useAuth } from '@/hooks/use-auth';
 
 const specSchema = z.object({
   key: z.string().min(1, 'Key is required'),
@@ -28,6 +29,21 @@ const mediaSchema = z.object({
   url: z.string(),
   imageHint: z.string(),
   sortOrder: z.number(),
+});
+
+const documentSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  type: z.enum(['Registration', 'COC', 'Inspection', 'Maintenance']),
+  url: z.string(),
+  createdAt: z.string(),
+});
+
+const internalNoteSchema = z.object({
+    id: z.string(),
+    note: z.string(),
+    authorId: z.string(),
+    createdAt: z.string(),
 });
 
 const formSchema = z.object({
@@ -44,6 +60,9 @@ const formSchema = z.object({
   visibility: z.enum(['public', 'members', 'hidden']),
   media: z.array(mediaSchema).min(1, "At least one image is required."),
   extraNotes: z.string().optional(),
+  verificationStatus: z.enum(['Unverified', 'Pending', 'Verified']),
+  documents: z.array(documentSchema),
+  internalNotes: z.array(internalNoteSchema),
 });
 
 type ListingFormValues = z.infer<typeof formSchema>;
@@ -94,8 +113,10 @@ function EnhanceButton({ getValues, setValue }: { getValues: any, setValue: any 
 
 export default function ListingForm({ existingListing }: ListingFormProps) {
   const router = useRouter();
+  const { user } = useAuth();
   const { addListing, updateListing } = useListings();
   const { toast } = useToast();
+  const [newNote, setNewNote] = useState('');
 
   const form = useForm<ListingFormValues>({
     resolver: zodResolver(formSchema),
@@ -116,6 +137,9 @@ export default function ListingForm({ existingListing }: ListingFormProps) {
       specs: [{ key: '', value: '' }],
       media: [],
       extraNotes: '',
+      verificationStatus: 'Unverified',
+      documents: [],
+      internalNotes: [],
     },
   });
 
@@ -127,6 +151,16 @@ export default function ListingForm({ existingListing }: ListingFormProps) {
   const { fields: mediaFields, append: appendMedia, remove: removeMedia } = useFieldArray({
     control: form.control,
     name: 'media',
+  });
+  
+  const { fields: documentFields, append: appendDocument, remove: removeDocument } = useFieldArray({
+    control: form.control,
+    name: 'documents',
+  });
+  
+  const { fields: noteFields, append: appendNote } = useFieldArray({
+    control: form.control,
+    name: 'internalNotes',
   });
 
   async function onSubmit(data: ListingFormValues) {
@@ -140,6 +174,19 @@ export default function ListingForm({ existingListing }: ListingFormProps) {
     router.push('/admin/listings');
     router.refresh();
   }
+
+  const handleAddNewNote = () => {
+    if (newNote.trim() && user) {
+        appendNote({
+            id: `note-${Date.now()}`,
+            note: newNote.trim(),
+            authorId: user.id,
+            createdAt: new Date().toISOString()
+        });
+        setNewNote('');
+    }
+  };
+
 
   return (
     <Form {...form}>
@@ -170,7 +217,7 @@ export default function ListingForm({ existingListing }: ListingFormProps) {
         </Card>
 
         <Card>
-          <CardHeader><CardTitle>Details & Description</CardTitle></CardHeader>
+          <CardHeader><CardTitle>Details &amp; Description</CardTitle></CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <FormField control={form.control} name="condition" render={({ field }) => (
@@ -240,6 +287,59 @@ export default function ListingForm({ existingListing }: ListingFormProps) {
                 </div>
             </CardContent>
         </Card>
+
+        <Card>
+            <CardHeader><CardTitle>Verification &amp; Documents</CardTitle></CardHeader>
+            <CardContent className="space-y-6">
+                <FormField control={form.control} name="verificationStatus" render={({ field }) => (
+                <FormItem><FormLabel>Verification Status</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl><SelectContent>
+                    <SelectItem value="Unverified">Unverified</SelectItem>
+                    <SelectItem value="Pending">Pending</SelectItem>
+                    <SelectItem value="Verified">Verified</SelectItem>
+                </SelectContent></Select><FormMessage /></FormItem>
+                )} />
+                
+                <div>
+                    <FormLabel>Documents</FormLabel>
+                    <div className="mt-2 space-y-2">
+                        {documentFields.map((field, index) => (
+                            <div key={field.id} className="flex items-center gap-2 p-2 border rounded-md">
+                                <FileText className="h-5 w-5 text-muted-foreground" />
+                                <div className="flex-1">
+                                    <p className="text-sm font-medium">{field.name}</p>
+                                    <p className="text-xs text-muted-foreground">{field.type}</p>
+                                </div>
+                                <Button type="button" variant="ghost" size="icon" onClick={() => removeDocument(index)}><Trash2 className="h-4 w-4" /></Button>
+                            </div>
+                        ))}
+                    </div>
+                    <Button type="button" size="sm" variant="outline" className="mt-2" onClick={() => appendDocument({ id: `doc-${Date.now()}`, name: 'New Document.pdf', type: 'Registration', url: '#', createdAt: new Date().toISOString() })}>
+                        <PlusCircle className="mr-2 h-4 w-4" /> Add Mock Document
+                    </Button>
+                </div>
+            </CardContent>
+        </Card>
+
+        <Card>
+            <CardHeader><CardTitle>Internal Notes</CardTitle></CardHeader>
+            <CardContent>
+                <div className="space-y-2 max-h-60 overflow-y-auto">
+                    {noteFields.map((field) => (
+                        <div key={field.id} className="p-3 border rounded-md bg-secondary/50">
+                            <p className="text-sm">{field.note}</p>
+                            <p className="text-xs text-muted-foreground mt-1">
+                                By Admin on {new Date(field.createdAt).toLocaleDateString()}
+                            </p>
+                        </div>
+                    ))}
+                </div>
+                <div className="mt-4 flex gap-2">
+                    <Textarea placeholder="Add a new internal note..." value={newNote} onChange={(e) => setNewNote(e.target.value)} />
+                    <Button type="button" onClick={handleAddNewNote} disabled={!newNote.trim()}>Add Note</Button>
+                </div>
+            </CardContent>
+        </Card>
+
 
         <Card>
           <CardHeader><CardTitle>Visibility</CardTitle></CardHeader>
