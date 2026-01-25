@@ -68,7 +68,51 @@ export type User = {
 
 // --- RFQ Types Start ---
 
-export type RFQStatus = 'Received' | 'In progress' | 'Offer sent' | 'Closed';
+export type RFQStatus = 'Received' | 'In progress' | 'Offer sent' | 'Pending execution' | 'Won' | 'Lost';
+export type OfferStatus = 'Draft' | 'Sent' | 'Accepted' | 'Declined' | 'Expired';
+
+export type Offer = {
+    id: string;
+    rfqId: string;
+    listingId?: string;
+    title: string;
+    price?: number;
+    currency?: string;
+    terms?: string;
+    location?: string;
+    availabilityText?: string;
+    validUntil: string;
+    includedFlags: { [key: string]: boolean };
+    notes?: string;
+    status: OfferStatus;
+    createdAt: string;
+    sentAt?: string;
+    versionNumber: number;
+    declineReason?: string;
+};
+
+export type OfferFile = {
+  id: string;
+  offerId: string;
+  name: string;
+  url: string;
+  createdAt: string;
+};
+
+
+export type RFQEvent = {
+    id: string;
+    type: 'status_change' | 'message' | 'offer_sent' | 'offer_accepted' | 'offer_declined' | 'rfq_closed';
+    timestamp: string;
+    payload: {
+        status?: RFQStatus | OfferStatus;
+        message?: string;
+        author?: string;
+        offerId?: string;
+        title?: string;
+        reason?: string;
+    }
+};
 
 export type RFQUrgency = 'Normal' | 'Urgent';
 
@@ -93,6 +137,9 @@ export type RFQ = {
   createdAt: string;
   // Phase 3
   internalOpsNotes?: string;
+  // Phase 4
+  closeReason?: string;
+  events: RFQEvent[];
 };
 
 export type RFQMessage = {
@@ -101,15 +148,6 @@ export type RFQMessage = {
   senderId: string;
   senderType: 'buyer' | 'admin';
   message: string;
-  createdAt: string;
-};
-
-export type RFQFile = {
-  id: string;
-  rfqId: string;
-  fileName: string;
-  url: string;
-  type: 'offer';
   createdAt: string;
 };
 

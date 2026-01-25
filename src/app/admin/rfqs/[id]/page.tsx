@@ -9,36 +9,65 @@ import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import MessagingThread from '@/components/rfq/messaging-thread';
 import Link from 'next/link';
-import { ArrowLeft, User as UserIcon } from 'lucide-react';
-import { RFQStatus, User } from '@/lib/types';
+import { ArrowLeft, User as UserIcon, FileText, Banknote, Calendar, CheckCircle, Truck, Package } from 'lucide-react';
+import { RFQStatus, User, Offer } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { mockUsers } from '@/lib/mock-data'; // Need this to get buyer details
+import { mockUsers } from '@/lib/mock-data';
 import { Textarea } from '@/components/ui/textarea';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import OfferForm from '@/components/admin/offer-form';
+import CloseRfqDialog from '@/components/rfq/close-rfq-dialog';
+import DealTimeline from '@/components/rfq/deal-timeline';
 
 const statusColors: Record<RFQStatus, string> = {
     Received: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
     'In progress': 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
     'Offer sent': 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
-    Closed: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300',
+    'Pending execution': 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
+    Won: 'bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-200',
+    Lost: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
 };
 
 const findUserById = (userId: string): User | undefined => {
     return mockUsers.find(u => u.id === userId); // In a real app, this would be a DB call
 }
 
+const OfferItem = ({ offer }: { offer: Offer }) => {
+    return (
+        <div className="border p-4 rounded-lg">
+            <div className="flex justify-between items-start">
+                <div>
+                    <h4 className="font-semibold">{offer.title} <span className="text-sm font-normal text-muted-foreground">(v{offer.versionNumber})</span></h4>
+                    <p className="text-sm text-muted-foreground">Sent: {format(new Date(offer.sentAt!), "PPP")}</p>
+                </div>
+                <Badge variant="outline">{offer.status}</Badge>
+            </div>
+            <div className="text-sm mt-2 space-y-1">
+                {offer.price && <p className="flex items-center gap-2"><Banknote className="w-4 h-4 text-muted-foreground" /> <strong>Price:</strong> {new Intl.NumberFormat('en-US', { style: 'currency', currency: offer.currency || 'USD' }).format(offer.price)}</p>}
+                <p className="flex items-center gap-2"><Calendar className="w-4 h-4 text-muted-foreground" /> <strong>Valid Until:</strong> {format(new Date(offer.validUntil), "PPP")}</p>
+                <p className="flex items-center gap-2"><Truck className="w-4 h-4 text-muted-foreground" /> <strong>Terms:</strong> {offer.terms}</p>
+                 <p className="flex items-center gap-2"><Package className="w-4 h-4 text-muted-foreground" /> <strong>Availability:</strong> {offer.availabilityText}</p>
+            </div>
+        </div>
+    )
+}
+
 export default function AdminRfqWorkspacePage() {
     const params = useParams();
     const rfqId = params.id as string;
-    const { getRfqById, updateRfqStatus, updateRfqInternalNotes, loading: rfqLoading } = useRfqs();
+    const { getRfqById, updateRfqStatus, updateRfqInternalNotes, getOffersForRfq, loading: rfqLoading } = useRfqs();
     const { user: adminUser, loading: authLoading } = useAuth();
     const router = useRouter();
 
     const rfq = getRfqById(rfqId);
+    const offers = getOffersForRfq(rfqId);
     const buyer = rfq ? findUserById(rfq.userId) : undefined;
     const loading = rfqLoading || authLoading;
     
     const [internalNote, setInternalNote] = useState(rfq?.internalOpsNotes || '');
+    const [isOfferFormOpen, setIsOfferFormOpen] = useState(false);
+    const [isCloseRfqOpen, setIsCloseRfqOpen] = useState(false);
 
     useEffect(() => {
         if (!loading && (!adminUser || adminUser.role !== 'admin')) {
@@ -75,6 +104,12 @@ export default function AdminRfqWorkspacePage() {
 
             <div className="grid lg:grid-cols-3 gap-8">
                 <div className="lg:col-span-2 space-y-6">
+                     <Card>
+                        <CardHeader><CardTitle>Deal Timeline</CardTitle></CardHeader>
+                        <CardContent>
+                           <DealTimeline rfq={rfq} />
+                        </CardContent>
+                    </Card>
                     <Card>
                         <CardHeader>
                             <CardTitle>Conversation with Buyer</CardTitle>
@@ -118,17 +153,40 @@ export default function AdminRfqWorkspacePage() {
                         <CardContent className="space-y-4">
                             <div>
                                 <label className="text-sm font-medium">Change Status</label>
-                                <Select defaultValue={rfq.status} onValueChange={(value: RFQStatus) => updateRfqStatus(rfq.id, value)}>
+                                <Select value={rfq.status} onValueChange={(value: RFQStatus) => updateRfqStatus(rfq.id, value)}>
                                     <SelectTrigger><SelectValue /></SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="Received">Received</SelectItem>
                                         <SelectItem value="In progress">In progress</SelectItem>
                                         <SelectItem value="Offer sent">Offer sent</SelectItem>
-                                        <SelectItem value="Closed">Closed</SelectItem>
+                                        <SelectItem value="Pending execution">Pending execution</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
-                            <Button className="w-full" disabled>Upload/Send Offer (Phase 2)</Button>
+                            <Dialog open={isOfferFormOpen} onOpenChange={setIsOfferFormOpen}>
+                                <DialogTrigger asChild>
+                                    <Button className="w-full">
+                                        <FileText className="mr-2 h-4 w-4" /> Create Offer
+                                    </Button>
+                                </DialogTrigger>
+                                <DialogContent className="sm:max-w-[600px]">
+                                    <DialogHeader>
+                                        <DialogTitle>Create New Offer</DialogTitle>
+                                    </DialogHeader>
+                                    <OfferForm rfq={rfq} onFinished={() => setIsOfferFormOpen(false)} />
+                                </DialogContent>
+                            </Dialog>
+                            <CloseRfqDialog rfqId={rfq.id} open={isCloseRfqOpen} onOpenChange={setIsCloseRfqOpen}>
+                                <Button variant="destructive" className="w-full">Close RFQ</Button>
+                            </CloseRfqDialog>
+                        </CardContent>
+                    </Card>
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Sent Offers</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-2">
+                            {offers.length > 0 ? offers.map(offer => <OfferItem key={offer.id} offer={offer} />) : <p className="text-sm text-muted-foreground">No offers sent yet.</p>}
                         </CardContent>
                     </Card>
                     <Card>

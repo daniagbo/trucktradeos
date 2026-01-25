@@ -11,52 +11,34 @@ import MessagingThread from '@/components/rfq/messaging-thread';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import { RFQStatus } from '@/lib/types';
+import OfferCard from '@/components/rfq/offer-card';
+import DealTimeline from '@/components/rfq/deal-timeline';
 
 const statusColors: Record<RFQStatus, string> = {
     Received: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
     'In progress': 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
     'Offer sent': 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
-    Closed: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300',
+    'Pending execution': 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
+    Won: 'bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-200',
+    Lost: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
 };
-
-const StatusTimeline = ({ status, createdAt }: { status: RFQStatus, createdAt: string }) => {
-    const statuses: RFQStatus[] = ['Received', 'In progress', 'Offer sent', 'Closed'];
-    const currentIndex = statuses.indexOf(status);
-
-    return (
-        <div className="flex justify-between items-center">
-            {statuses.map((s, i) => (
-                <div key={s} className="flex-1 text-center">
-                    <div className="flex items-center justify-center">
-                         {i > 0 && <div className={`flex-1 h-1 ${i <= currentIndex ? 'bg-primary' : 'bg-border'}`}></div>}
-                         <div className={`w-8 h-8 rounded-full flex items-center justify-center ${i <= currentIndex ? 'bg-primary text-primary-foreground' : 'bg-border'}`}>
-                             {i < currentIndex ? '✔' : i + 1}
-                         </div>
-                        {i < statuses.length - 1 && <div className={`flex-1 h-1 ${i < currentIndex ? 'bg-primary' : 'bg-border'}`}></div>}
-                    </div>
-                    <p className={`text-xs mt-2 ${i <= currentIndex ? 'font-semibold' : 'text-muted-foreground'}`}>{s}</p>
-                </div>
-            ))}
-        </div>
-    );
-};
-
 
 export default function RfqDetailPage() {
     const params = useParams();
     const rfqId = params.id as string;
-    const { getRfqById, loading: rfqLoading } = useRfqs();
+    const { getRfqById, getOffersForRfq, loading: rfqLoading } = useRfqs();
     const { user, loading: authLoading } = useAuth();
     const router = useRouter();
 
     const rfq = getRfqById(rfqId);
+    const offers = getOffersForRfq(rfqId);
     const loading = rfqLoading || authLoading;
 
     useEffect(() => {
         if (!loading) {
             if (!user) {
                 router.push(`/login?redirect=/dashboard/rfqs/${rfqId}`);
-            } else if (!rfq || rfq.userId !== user.id) {
+            } else if (rfq && rfq.userId !== user.id) {
                 router.push('/dashboard/rfqs');
             }
         }
@@ -65,6 +47,8 @@ export default function RfqDetailPage() {
     if (loading || !rfq) {
         return <div className="container py-8"><Skeleton className="h-screen w-full" /></div>
     }
+
+    const hasActiveOffer = offers.some(o => o.status === 'Accepted');
 
     return (
         <div className="container py-8">
@@ -75,6 +59,27 @@ export default function RfqDetailPage() {
 
             <div className="grid lg:grid-cols-3 gap-8">
                 <div className="lg:col-span-2 space-y-6">
+                    {offers.length > 0 && (
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Offers</CardTitle>
+                                <CardDescription>Review the offers from our sourcing team.</CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                {offers.map(offer => (
+                                    <OfferCard key={offer.id} offer={offer} hasActiveOffer={hasActiveOffer} />
+                                ))}
+                            </CardContent>
+                        </Card>
+                    )}
+                     <Card>
+                        <CardHeader>
+                            <CardTitle>Deal Timeline</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                           <DealTimeline rfq={rfq} />
+                        </CardContent>
+                    </Card>
                     <Card>
                         <CardHeader>
                             <CardTitle>Conversation</CardTitle>
@@ -94,8 +99,7 @@ export default function RfqDetailPage() {
                                 <Badge variant="outline" className={statusColors[rfq.status]}>{rfq.status}</Badge>
                             </div>
                         </CardHeader>
-                        <CardContent className="space-y-4 text-sm">
-                            <StatusTimeline status={rfq.status} createdAt={rfq.createdAt} />
+                        <CardContent className="space-y-2 text-sm">
                              <div className="border-t pt-4 space-y-2">
                                 <p><strong>Category:</strong> {rfq.category}</p>
                                 <p><strong>Key Specs:</strong> {rfq.keySpecs}</p>
