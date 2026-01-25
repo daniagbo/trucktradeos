@@ -17,16 +17,16 @@ interface ListingCardProps {
 
 const getCompleteness = (listing: Listing) => {
     let score = 0;
-    if (listing.media.length > 0) score += 25;
-    if (listing.specs.length > 2) score += 25;
+    if ((listing.media?.length || 0) > 0) score += 25;
+    if ((listing.specs?.length || 0) > 2) score += 25;
     if (listing.verificationStatus === 'Verified') score += 25;
-    if (listing.documents.length > 0) score += 25;
+    if ((listing.documents?.length || 0) > 0) score += 25;
     return score;
 }
 
 export default function ListingCard({ listing, isMember }: ListingCardProps) {
-  const keySpecs = listing.specs.slice(0, isMember ? 3 : 2);
-  const placeholderImage = listing.media[0] || { url: 'https://picsum.photos/seed/placeholder/600/400', imageHint: 'placeholder' };
+  const keySpecs = listing.specs?.slice(0, isMember ? 3 : 2) || [];
+  const placeholderImage = listing.media?.[0] || { url: 'https://picsum.photos/seed/placeholder/600/400', imageHint: 'placeholder' };
   const completeness = getCompleteness(listing);
 
   return (
@@ -94,10 +94,10 @@ export default function ListingCard({ listing, isMember }: ListingCardProps) {
                     <TooltipContent>
                         <p className="text-sm font-medium">Listing Completeness Score</p>
                         <ul className="list-disc list-inside text-xs text-muted-foreground mt-1 space-y-1">
-                            <li className={cn(listing.media.length > 0 ? 'text-foreground' : '')}>Photos</li>
-                            <li className={cn(listing.specs.length > 2 ? 'text-foreground' : '')}>Key Specs</li>
+                            <li className={cn((listing.media?.length || 0) > 0 ? 'text-foreground' : '')}>Photos</li>
+                            <li className={cn((listing.specs?.length || 0) > 2 ? 'text-foreground' : '')}>Key Specs</li>
                             <li className={cn(listing.verificationStatus === 'Verified' ? 'text-foreground' : '')}>Verified Source</li>
-                            <li className={cn(listing.documents.length > 0 ? 'text-foreground' : '')}>Documents</li>
+                            <li className={cn((listing.documents?.length || 0) > 0 ? 'text-foreground' : '')}>Documents</li>
                         </ul>
                     </TooltipContent>
                 </Tooltip>

@@ -17,10 +17,10 @@ import { Progress } from '../ui/progress';
 
 const getCompleteness = (listing: Listing) => {
     let score = 0;
-    if (listing.media.length > 0) score += 25;
-    if (listing.specs.length > 2) score += 25;
+    if ((listing.media?.length || 0) > 0) score += 25;
+    if ((listing.specs?.length || 0) > 2) score += 25;
     if (listing.verificationStatus === 'Verified') score += 25;
-    if (listing.documents.length > 0) score += 25;
+    if ((listing.documents?.length || 0) > 0) score += 25;
     return score;
 }
 
@@ -37,10 +37,10 @@ const VerificationBadge = ({ status }: { status: VerificationStatus }) => {
 const ListingCompleteness = ({ listing }: { listing: Listing }) => {
     const completeness = getCompleteness(listing);
     const items = [
-        { label: 'Photos included', complete: listing.media.length > 0 },
-        { label: 'Key specifications listed', complete: listing.specs.length > 2 },
+        { label: 'Photos included', complete: (listing.media?.length || 0) > 0 },
+        { label: 'Key specifications listed', complete: (listing.specs?.length || 0) > 2 },
         { label: 'Source is verified', complete: listing.verificationStatus === 'Verified' },
-        { label: 'Documents available', complete: listing.documents.length > 0 },
+        { label: 'Documents available', complete: (listing.documents?.length || 0) > 0 },
     ];
     return (
         <Card>
@@ -163,7 +163,7 @@ export default function ListingDetailView({ listingId }: { listingId: string }) 
             <CardContent>
                 <Table>
                     <TableBody>
-                        {listing.specs.map((spec) => (
+                        {listing.specs?.map((spec) => (
                             <TableRow key={spec.key}>
                                 <TableCell className="font-medium">{spec.key}</TableCell>
                                 <TableCell>{spec.value}</TableCell>
@@ -176,7 +176,7 @@ export default function ListingDetailView({ listingId }: { listingId: string }) 
           
           <GatedContent title="Documents" icon={FileText}>
               <div className="space-y-2">
-                  {listing.documents.length > 0 ? (
+                  {(listing.documents?.length || 0) > 0 ? (
                       listing.documents.map(doc => (
                         <a key={doc.id} href={doc.url} target="_blank" rel="noreferrer" className="flex items-center justify-between p-3 rounded-md border hover:bg-secondary transition-colors">
                             <div>
