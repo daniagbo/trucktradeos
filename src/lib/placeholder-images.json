@@ -1,3 +1,76 @@
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    {
+      "id": "truck-1",
+      "description": "A modern white semi-truck on a highway.",
+      "imageUrl": "https://images.unsplash.com/photo-1676462298140-4a95f99a88e9?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHx3aGl0ZSUyMHRydWNrfGVufDB8fHx8MTc2OTM0NzAwMHww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "white truck"
+    },
+    {
+      "id": "truck-2",
+      "description": "A red truck parked at a loading dock.",
+      "imageUrl": "https://images.unsplash.com/photo-1627208875748-2f4aed577f2d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw0fHxyZWQlMjB0cnVja3xlbnwwfHx8fDE3NjkzNDcwMDB8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "red truck"
+    },
+    {
+      "id": "truck-3",
+      "description": "A blue truck driving through a scenic route.",
+      "imageUrl": "https://images.unsplash.com/photo-1769184617754-3ef1932d137f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxibHVlJTIwdHJ1Y2t8ZW58MHx8fHwxNzY5MjgyNTA3fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "blue truck"
+    },
+    {
+      "id": "trailer-1",
+      "description": "A long flatbed trailer, empty.",
+      "imageUrl": "https://images.unsplash.com/photo-1725781535657-29d825bc7824?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHxmbGF0YmVkJTIwdHJhaWxlcnxlbnwwfHx8fDE3NjkzNDcwMDB8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "flatbed trailer"
+    },
+    {
+      "id": "trailer-2",
+      "description": "A refrigerated container trailer.",
+      "imageUrl": "https://images.unsplash.com/photo-1720811559436-9523b136e743?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxyZWZyaWdlcmF0ZWQlMjB0cmFpbGVyfGVufDB8fHx8MTc2OTM0NzAwMHww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "refrigerated trailer"
+    },
+    {
+      "id": "equipment-1",
+      "description": "A yellow excavator at a construction site.",
+      "imageUrl": "https://images.unsplash.com/photo-1629132497808-1c55ac45c4da?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw0fHx5ZWxsb3clMjBleGNhdmF0b3J8ZW58MHx8fHwxNzY5MzQ3MDAwfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "yellow excavator"
+    },
+    {
+      "id": "equipment-2",
+      "description": "A large bulldozer moving earth.",
+      "imageUrl": "https://images.unsplash.com/photo-1671022401663-03f0e252123f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHxidWxsZG96ZXIlMjBjb25zdHJ1Y3Rpb258ZW58MHx8fHwxNzY5MzQ3MDAwfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "bulldozer construction"
+    },
+    {
+      "id": "equipment-3",
+      "description": "A crane lifting materials.",
+      "imageUrl": "https://images.unsplash.com/photo-1637044875244-6a002ad32799?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxjcmFuZSUyMHNpdGV8ZW58MHx8fHwxNzY5MzQ3MDAwfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "crane site"
+    },
+    {
+      "id": "truck-4",
+      "description": "A fleet of silver trucks in a row.",
+      "imageUrl": "https://images.unsplash.com/photo-1587813369290-091c9d432daf?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHx0cnVjayUyMGZsZWV0fGVufDB8fHx8MTc2OTM0NzAwMHww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "truck fleet"
+    },
+    {
+      "id": "trailer-3",
+      "description": "A curtain-side trailer ready for loading.",
+      "imageUrl": "https://images.unsplash.com/photo-1700490781670-25b632b29543?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHxjdXJ0YWluJTIwdHJhaWxlcnxlbnwwfHx8fDE3NjkzNDcwMDB8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "curtain trailer"
+    },
+    {
+      "id": "truck-interior-1",
+      "description": "Interior cabin of a modern truck.",
+      "imageUrl": "https://images.unsplash.com/photo-1768347441536-9a8446ef2513?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHx0cnVjayUyMGNhYmlufGVufDB8fHx8MTc2OTMxODI5Nnww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "truck cabin"
+    },
+    {
+      "id": "truck-engine-1",
+      "description": "Close up of a powerful truck engine.",
+      "imageUrl": "https://images.unsplash.com/photo-1657643643583-5cfd68e740aa?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxMHx8dHJ1Y2slMjBlbmdpbmV8ZW58MHx8fHwxNzY5MjY0MDczfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "truck engine"
+    }
+  ]
 }
