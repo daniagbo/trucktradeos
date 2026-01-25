@@ -44,3 +44,50 @@ export type User = {
   vat?: string;
   createdAt: string;
 };
+
+// --- RFQ Types Start ---
+
+export type RFQStatus = 'Received' | 'In progress' | 'Offer sent' | 'Closed';
+
+export type RFQUrgency = 'Normal' | 'Urgent';
+
+export type RFQ = {
+  id: string;
+  userId: string;
+  listingId?: string; // Optional reference to a listing
+  category: 'Trailer' | 'Truck' | 'Heavy Equipment';
+  keySpecs: string; // Free text for now
+  preferredBrands?: string;
+  yearMin?: number;
+  yearMax?: number;
+  budgetMin?: number;
+  budgetMax?: number;
+  deliveryCountry: string;
+  pickupDeadline?: Date;
+  urgency: RFQUrgency;
+  requiredDocuments: string[];
+  conditionTolerance: string;
+  notes?: string;
+  status: RFQStatus;
+  createdAt: string;
+};
+
+export type RFQMessage = {
+  id: string;
+  rfqId: string;
+  senderId: string;
+  senderType: 'buyer' | 'admin';
+  message: string;
+  createdAt: string;
+};
+
+export type RFQFile = {
+  id: string;
+  rfqId: string;
+  fileName: string;
+  url: string;
+  type: 'offer';
+  createdAt: string;
+};
+
+// --- RFQ Types End ---

@@ -8,7 +8,7 @@ interface ListingsContextType {
   listings: Listing[];
   loading: boolean;
   getListing: (id: string) => Listing | undefined;
-  addListing: (listing: Listing) => void;
+  addListing: (listing: Omit<Listing, 'id' | 'createdAt'>) => void;
   updateListing: (id: string, updatedData: Partial<Listing>) => void;
   deleteListing: (id: string) => void;
 }
@@ -44,8 +44,13 @@ export const ListingsProvider = ({ children }: { children: ReactNode }) => {
     return listings.find(listing => listing.id === id);
   }, [listings]);
 
-  const addListing = (listing: Listing) => {
-    const updatedListings = [listing, ...listings];
+  const addListing = (listingData: Omit<Listing, 'id' | 'createdAt'>) => {
+    const newListing: Listing = {
+      ...listingData,
+      id: `listing-${Date.now()}`,
+      createdAt: new Date().toISOString(),
+    };
+    const updatedListings = [newListing, ...listings];
     setListings(updatedListings);
     localStorage.setItem(LISTINGS_STORAGE_KEY, JSON.stringify(updatedListings));
   };

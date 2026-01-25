@@ -15,7 +15,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { LayoutDashboard, LogOut, Settings, Truck, User as UserIcon } from 'lucide-react';
+import { LayoutDashboard, LogOut, Settings, Truck, User as UserIcon, FileText } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger } from '../ui/sheet';
 import { Menu } from 'lucide-react';
 import { useState } from 'react';
@@ -62,7 +62,14 @@ export default function Header() {
           {user && (
             <>
               <Link href="/dashboard" className="text-lg" onClick={() => setMobileMenuOpen(false)}>Dashboard</Link>
-              {user.role === 'admin' && <Link href="/admin/listings" className="text-lg" onClick={() => setMobileMenuOpen(false)}>Admin</Link>}
+              <Link href="/dashboard/rfqs" className="text-lg" onClick={() => setMobileMenuOpen(false)}>My RFQs</Link>
+              {user.role === 'admin' && (
+                  <>
+                    <div className="px-2 py-1 text-xs text-muted-foreground font-semibold">Admin</div>
+                    <Link href="/admin/listings" className="text-lg pl-4" onClick={() => setMobileMenuOpen(false)}>Manage Listings</Link>
+                    <Link href="/admin/rfqs" className="text-lg pl-4" onClick={() => setMobileMenuOpen(false)}>Manage RFQs</Link>
+                  </>
+              )}
             </>
           )}
           <div className="mt-auto">
@@ -125,13 +132,23 @@ export default function Header() {
                       <DropdownMenuItem asChild>
                         <Link href="/dashboard"><LayoutDashboard className="mr-2 h-4 w-4" />Dashboard</Link>
                       </DropdownMenuItem>
+                       <DropdownMenuItem asChild>
+                        <Link href="/dashboard/rfqs"><FileText className="mr-2 h-4 w-4" />My Sourcing Requests</Link>
+                      </DropdownMenuItem>
                       <DropdownMenuItem asChild>
                         <Link href="/profile"><Settings className="mr-2 h-4 w-4" />Profile</Link>
                       </DropdownMenuItem>
                       {user.role === 'admin' && (
+                        <>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuLabel>Admin</DropdownMenuLabel>
                         <DropdownMenuItem asChild>
                            <Link href="/admin/listings"><Truck className="mr-2 h-4 w-4" />Manage Listings</Link>
                         </DropdownMenuItem>
+                         <DropdownMenuItem asChild>
+                           <Link href="/admin/rfqs"><FileText className="mr-2 h-4 w-4" />Manage RFQs</Link>
+                        </DropdownMenuItem>
+                        </>
                       )}
                       <DropdownMenuSeparator />
                       <DropdownMenuItem onClick={logout}>

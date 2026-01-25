@@ -9,7 +9,7 @@ import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Table, TableBody, TableCell, TableRow } from '../ui/table';
-import { CalendarDays, MapPin, Tag, Wrench, FileText, Info, Lock } from 'lucide-radix';
+import { FileText, Info, Lock, MapPin } from 'lucide-react';
 import Link from 'next/link';
 
 export default function ListingDetailView({ listingId }: { listingId: string }) {
@@ -147,13 +147,15 @@ export default function ListingDetailView({ listingId }: { listingId: string }) 
               </CardHeader>
               <CardContent>
                 {isMember ? (
-                  <Button size="lg" className="w-full" disabled>Request Offer (Phase 2)</Button>
+                  <Button size="lg" className="w-full" asChild>
+                    <Link href={`/rfq/new?listingId=${listing.id}`}>Request Offer</Link>
+                  </Button>
                 ) : (
                   <Button size="lg" className="w-full" asChild>
                     <Link href={`/register?redirect=/listings/${listing.id}`}>Unlock Full Details</Link>
                   </Button>
                 )}
-                <p className="text-xs text-muted-foreground mt-2">Log in or sign up to get offers.</p>
+                <p className="text-xs text-muted-foreground mt-2">{isMember ? 'We will get back to you with a quote.' : 'Log in or sign up to get offers.'}</p>
               </CardContent>
             </Card>
           </div>

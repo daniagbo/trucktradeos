@@ -1,6 +1,6 @@
 'use client';
 
-import { useForm, useFieldArray, useFormState } from 'react-hook-form';
+import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Button } from '@/components/ui/button';
@@ -9,13 +9,14 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import type { Listing, Spec, ListingMedia } from '@/lib/types';
+import type { Listing, ListingMedia, Spec } from '@/lib/types';
 import { useListings } from '@/hooks/use-listings';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, PlusCircle, Sparkles, Trash2, X } from 'lucide-radix';
+import { Loader2, PlusCircle, Sparkles, Trash2, X } from 'lucide-react';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { enhanceWithAI } from '@/lib/actions';
+import { useState } from 'react';
 
 const specSchema = z.object({
   key: z.string().min(1, 'Key is required'),
@@ -51,16 +52,12 @@ interface ListingFormProps {
   existingListing?: Listing;
 }
 
-function EnhanceButton({ control }: { control: any }) {
-  const [state, setState] = useState<{ message: string | null, enhancedDescription: string | null, error: any }>({ message: null, enhancedDescription: null, error: null });
+function EnhanceButton({ getValues, setValue }: { getValues: any, setValue: any }) {
   const [pending, setPending] = useState(false);
   const { toast } = useToast();
 
-  const { getValues, setValue } = control;
-
   const handleEnhance = async () => {
     setPending(true);
-    const formData = new FormData();
     const category = getValues('category');
     const specs = getValues('specs');
     const existingDescription = getValues('description');
@@ -70,6 +67,7 @@ function EnhanceButton({ control }: { control: any }) {
         return acc;
     }, {});
     
+    const formData = new FormData();
     formData.append('category', category);
     formData.append('specs', JSON.stringify(specsObject));
     formData.append('existingDescription', existingDescription);
@@ -108,10 +106,16 @@ export default function ListingForm({ existingListing }: ListingFormProps) {
       title: '',
       category: 'Truck',
       brand: '',
+      model: '',
+      year: undefined,
       condition: 'Used',
+      country: '',
+      city: '',
+      description: '',
       visibility: 'public',
       specs: [{ key: '', value: '' }],
       media: [],
+      extraNotes: '',
     },
   });
 
@@ -130,12 +134,7 @@ export default function ListingForm({ existingListing }: ListingFormProps) {
       updateListing(existingListing.id, data);
       toast({ title: 'Success', description: 'Listing updated successfully.' });
     } else {
-      const newListing: Listing = {
-        ...data,
-        id: `listing-${Date.now()}`,
-        createdAt: new Date().toISOString(),
-      };
-      addListing(newListing);
+      addListing(data);
       toast({ title: 'Success', description: 'Listing created successfully.' });
     }
     router.push('/admin/listings');
@@ -185,7 +184,7 @@ export default function ListingForm({ existingListing }: ListingFormProps) {
               )} />
             </div>
             <FormField control={form.control} name="description" render={({ field }) => (
-              <FormItem><div className="flex justify-between items-center"><FormLabel>Description</FormLabel><EnhanceButton control={form.control} /></div><FormControl><Textarea rows={5} {...field} /></FormControl><FormMessage /></FormItem>
+              <FormItem><div className="flex justify-between items-center"><FormLabel>Description</FormLabel><EnhanceButton getValues={form.getValues} setValue={form.setValue} /></div><FormControl><Textarea rows={5} {...field} /></FormControl><FormMessage /></FormItem>
             )} />
              <FormField control={form.control} name="extraNotes" render={({ field }) => (
                 <FormItem><FormLabel>Extra Notes (for members)</FormLabel><FormControl><Textarea rows={3} {...field} /></FormControl><FormMessage /></FormItem>

@@ -4,6 +4,7 @@ import { AuthProvider } from '@/lib/auth';
 import Header from '@/components/layout/header';
 import Footer from '@/components/layout/footer';
 import { ListingsProvider } from '@/lib/listings';
+import { RfqsProvider } from '@/lib/rfqs';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -26,12 +27,14 @@ export default function RootLayout({
       <body className="font-body antialiased">
         <AuthProvider>
           <ListingsProvider>
-            <div className="flex min-h-screen flex-col">
-              <Header />
-              <main className="flex-grow">{children}</main>
-              <Footer />
-            </div>
-            <Toaster />
+            <RfqsProvider>
+              <div className="flex min-h-screen flex-col">
+                <Header />
+                <main className="flex-grow">{children}</main>
+                <Footer />
+              </div>
+              <Toaster />
+            </RfqsProvider>
           </ListingsProvider>
         </AuthProvider>
       </body>

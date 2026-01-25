@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, Search, Settings, Star, Truck } from 'lucide-react';
+import { ArrowRight, FileText, Search, Settings, Star, Truck } from 'lucide-react';
 import Link from 'next/link';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -26,6 +26,7 @@ export default function DashboardPage() {
                 <Skeleton className="h-48" />
                 <Skeleton className="h-48" />
                 <Skeleton className="h-48" />
+                 <Skeleton className="h-48" />
             </div>
         </div>
     );
@@ -40,7 +41,7 @@ export default function DashboardPage() {
       </h1>
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {profileIsIncomplete && (
-            <Card className="bg-primary/10 border-primary/20">
+            <Card className="bg-primary/10 border-primary/20 md:col-span-2 lg:col-span-3">
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                     <Settings className="h-6 w-6 text-primary" />
@@ -62,6 +63,24 @@ export default function DashboardPage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
+              <FileText className="h-6 w-6 text-primary" />
+              New Sourcing Request
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-muted-foreground mb-4">
+              Can&apos;t find what you&apos;re looking for? Let our team source it for you.
+            </p>
+            <Button asChild>
+              <Link href="/rfq/new">
+                Create RFQ <ArrowRight className="ml-2 h-4 w-4" />
+              </Link>
+            </Button>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
               <Truck className="h-6 w-6 text-primary" />
               Browse Inventory
             </CardTitle>
@@ -77,22 +96,25 @@ export default function DashboardPage() {
             </Button>
           </CardContent>
         </Card>
-        <Card className="opacity-50 cursor-not-allowed">
+        <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Search className="h-6 w-6" />
-              Saved Searches
+              <Search className="h-6 w-6 text-primary" />
+              My Sourcing Requests
             </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-muted-foreground mb-4">
-              Quickly run your frequent searches. (Coming Soon)
+              Track the status of your active sourcing requests (RFQs).
             </p>
-            <Button variant="outline" disabled>
-              View Searches
+            <Button asChild variant="outline">
+              <Link href="/dashboard/rfqs">
+                View My RFQs <ArrowRight className="ml-2 h-4 w-4" />
+              </Link>
             </Button>
           </CardContent>
         </Card>
+        
         <Card className="opacity-50 cursor-not-allowed">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
