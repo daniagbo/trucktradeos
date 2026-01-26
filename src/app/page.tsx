@@ -1,37 +1,55 @@
-'use client';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowRight, Search, Truck, ShieldCheck, Globe, Zap, BarChart3, ChevronRight } from 'lucide-react';
+import { db } from '@/lib/db';
+import { Listing } from '@/lib/types';
+import HeroSearch from '@/components/home/hero-search';
 import ListingCard from '@/components/listings/listing-card';
-import { useListings } from '@/hooks/use-listings';
-import { useRouter } from 'next/navigation';
-import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import Image from 'next/image';
+import { ArrowRight, BarChart3, ChevronRight, Globe, ShieldCheck, Truck, Zap } from 'lucide-react';
+import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Visibility } from '@prisma/client';
 
-export default function Home() {
-  const { listings } = useListings();
-  const router = useRouter();
-  const [searchQuery, setSearchQuery] = useState('');
-  const [category, setCategory] = useState('all');
-  const [scrolled, setScrolled] = useState(false);
+// Helper for enum conversion
+const toTitleCase = (str: string) => {
+  return str.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+}
 
-  useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 50);
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+export const revalidate = 60; // ISR: Revalidate every 60 seconds
 
-  const featuredListings = listings.filter(l => l.visibility === 'public').slice(0, 4);
+export default async function Home() {
+  // Fetch listings directly
+  const featuredListingsRaw = await db.listing.findMany({
+    where: { visibility: Visibility.PUBLIC },
+    orderBy: { createdAt: 'desc' },
+    take: 4,
+    include: {
+      media: {
+        orderBy: { sortOrder: 'asc' },
+        take: 1,
+      },
+      specs: true,
+    }
+  });
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    const params = new URLSearchParams();
-    if (searchQuery) params.set('search', searchQuery);
-    if (category !== 'all') params.set('category', category);
-    router.push(`/listings?${params.toString()}`);
-  };
+  // Transform
+  const featuredListings: Listing[] = featuredListingsRaw.map(l => ({
+    ...l,
+    category: toTitleCase(l.category) as any,
+    condition: toTitleCase(l.condition) as any,
+    visibility: l.visibility.toLowerCase() as any,
+    verificationStatus: toTitleCase(l.verificationStatus) as any,
+    availabilityStatus: l.availabilityStatus.toLowerCase() as any,
+    type: l.type.toLowerCase() as any,
+    createdAt: l.createdAt.toISOString(),
+    documents: [],
+    internalNotes: [],
+    model: l.model || undefined,
+    year: l.year || undefined,
+    city: l.city || undefined,
+    pricePerUnit: l.pricePerUnit || undefined,
+    extraNotes: l.extraNotes || undefined,
+    media: l.media.map(m => ({ ...m, imageHint: m.imageHint || '' })),
+  }));
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
@@ -63,34 +81,7 @@ export default function Home() {
               Access the world's most trusted marketplace for verified trucks, trailers, and industrial equipment. Real-time data, professional financing, and global logistics.
             </p>
 
-            <form onSubmit={handleSearch} className="animate-in slide-in-from-bottom duration-1000">
-              <div className="p-2 rounded-2xl glass border-white/20 shadow-2xl flex flex-col md:flex-row gap-2 max-w-xl">
-                <div className="flex-1 relative">
-                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-zinc-400" />
-                  <Input
-                    type="text"
-                    placeholder="Search model, brand, or VIN..."
-                    className="bg-white/10 border-white/10 h-14 pl-12 text-white placeholder:text-zinc-300 rounded-xl focus:ring-primary/50 focus:bg-white/20 transition-all"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                  />
-                </div>
-                <Select value={category} onValueChange={setCategory}>
-                  <SelectTrigger className="w-full md:w-[160px] h-14 bg-white/10 border-white/10 text-white rounded-xl focus:ring-primary/50 focus:bg-white/20 transition-all">
-                    <SelectValue placeholder="Category" />
-                  </SelectTrigger>
-                  <SelectContent className="glass border-white/10 text-white">
-                    <SelectItem value="all">All Specs</SelectItem>
-                    <SelectItem value="Trailer">Trailers</SelectItem>
-                    <SelectItem value="Truck">Trucks</SelectItem>
-                    <SelectItem value="Heavy Equipment">Machines</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Button type="submit" size="lg" className="h-14 px-8 rounded-xl font-bold shadow-lg shadow-primary/20 active:scale-95 transition-all">
-                  Search
-                </Button>
-              </div>
-            </form>
+            <HeroSearch />
 
             <div className="mt-8 flex items-center gap-6 animate-in fade-in duration-1000">
               <div className="flex -space-x-3">
@@ -137,8 +128,10 @@ export default function Home() {
               <h2 className="font-headline text-4xl font-bold text-foreground mb-4">Prime Inventory</h2>
               <p className="text-muted-foreground">Direct access to the market's most sought-after equipment. Vetted for technical integrity and ownership verification.</p>
             </div>
-            <Button variant="link" className="text-primary font-bold group" onClick={() => router.push('/listings')}>
-              Explore Full Market <ChevronRight className="ml-1 h-4 w-4 group-hover:translate-x-1 transition-transform" />
+            <Button variant="link" className="text-primary font-bold group" asChild>
+              <Link href="/listings">
+                Explore Full Market <ChevronRight className="ml-1 h-4 w-4 group-hover:translate-x-1 transition-transform" />
+              </Link>
             </Button>
           </div>
 
@@ -224,11 +217,11 @@ export default function Home() {
                 </p>
               </div>
               <div className="flex flex-col sm:flex-row gap-4 shrink-0">
-                <Button size="lg" className="bg-white text-primary hover:bg-white/90 font-bold px-10 h-16 rounded-2xl shadow-xl active:scale-95 transition-all text-lg" onClick={() => router.push('/register')}>
-                  Create Free Account
+                <Button size="lg" className="bg-white text-primary hover:bg-white/90 font-bold px-10 h-16 rounded-2xl shadow-xl active:scale-95 transition-all text-lg" asChild>
+                  <Link href="/register">Create Free Account</Link>
                 </Button>
-                <Button size="lg" variant="outline" className="border-white/20 hover:bg-white/10 text-white font-bold px-10 h-16 rounded-2xl active:scale-95 transition-all text-lg" onClick={() => router.push('/listings')}>
-                  View Live Inventory
+                <Button size="lg" variant="outline" className="border-white/20 hover:bg-white/10 text-white font-bold px-10 h-16 rounded-2xl active:scale-95 transition-all text-lg" asChild>
+                  <Link href="/listings">View Live Inventory</Link>
                 </Button>
               </div>
             </div>
