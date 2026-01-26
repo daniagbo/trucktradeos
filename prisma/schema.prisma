@@ -160,6 +160,7 @@ model Media {
   listingId String
   listing   Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
 
+  @@index([listingId])
   @@map("media")
 }
 
