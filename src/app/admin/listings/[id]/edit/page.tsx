@@ -3,10 +3,11 @@ import ListingForm from "@/components/admin/listing-form";
 import { useAuth } from "@/hooks/use-auth";
 import { useListings } from "@/hooks/use-listings";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, use } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 
-export default function EditListingPage({ params }: { params: { id: string } }) {
+export default function EditListingPage(props: { params: Promise<{ id: string }> }) {
+    const params = use(props.params);
     const { user, loading: authLoading } = useAuth();
     const { getListing, loading: listingsLoading } = useListings();
     const router = useRouter();
@@ -24,9 +25,9 @@ export default function EditListingPage({ params }: { params: { id: string } }) 
     }, [user, loading, router, listing, params.id]);
 
     if (loading || !user || user.role !== 'admin' || !listing) {
-         return (
+        return (
             <div className="container py-8">
-                 <div className="max-w-4xl mx-auto">
+                <div className="max-w-4xl mx-auto">
                     <Skeleton className="h-10 w-1/3 mb-8" />
                     <div className="space-y-8">
                         <Skeleton className="h-64 w-full" />

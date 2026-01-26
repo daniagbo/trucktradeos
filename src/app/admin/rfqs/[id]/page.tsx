@@ -13,7 +13,6 @@ import { ArrowLeft, User as UserIcon, FileText, Banknote, Calendar, CheckCircle,
 import { RFQStatus, User, Offer } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { mockUsers } from '@/lib/mock-data';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import OfferForm from '@/components/admin/offer-form';
@@ -29,8 +28,17 @@ const statusColors: Record<RFQStatus, string> = {
     Lost: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
 };
 
+// TODO: Replace with real user fetch from API
 const findUserById = (userId: string): User | undefined => {
-    return mockUsers.find(u => u.id === userId); // In a real app, this would be a DB call
+    return {
+        id: userId,
+        email: 'user@example.com',
+        name: 'User ' + userId,
+        role: 'member',
+        accountType: 'company',
+        country: 'Unknown',
+        createdAt: new Date().toISOString()
+    } as User;
 }
 
 const OfferItem = ({ offer }: { offer: Offer }) => {
@@ -47,7 +55,7 @@ const OfferItem = ({ offer }: { offer: Offer }) => {
                 {offer.price && <p className="flex items-center gap-2"><Banknote className="w-4 h-4 text-muted-foreground" /> <strong>Price:</strong> {new Intl.NumberFormat('en-US', { style: 'currency', currency: offer.currency || 'USD' }).format(offer.price)}</p>}
                 <p className="flex items-center gap-2"><Calendar className="w-4 h-4 text-muted-foreground" /> <strong>Valid Until:</strong> {format(new Date(offer.validUntil), "PPP")}</p>
                 <p className="flex items-center gap-2"><Truck className="w-4 h-4 text-muted-foreground" /> <strong>Terms:</strong> {offer.terms}</p>
-                 <p className="flex items-center gap-2"><Package className="w-4 h-4 text-muted-foreground" /> <strong>Availability:</strong> {offer.availabilityText}</p>
+                <p className="flex items-center gap-2"><Package className="w-4 h-4 text-muted-foreground" /> <strong>Availability:</strong> {offer.availabilityText}</p>
             </div>
         </div>
     )
@@ -64,7 +72,7 @@ export default function AdminRfqWorkspacePage() {
     const offers = getOffersForRfq(rfqId);
     const buyer = rfq ? findUserById(rfq.userId) : undefined;
     const loading = rfqLoading || authLoading;
-    
+
     const [internalNote, setInternalNote] = useState(rfq?.internalOpsNotes || '');
     const [isOfferFormOpen, setIsOfferFormOpen] = useState(false);
     const [isCloseRfqOpen, setIsCloseRfqOpen] = useState(false);
@@ -83,7 +91,7 @@ export default function AdminRfqWorkspacePage() {
             updateRfqInternalNotes(rfq.id, internalNote);
         }
     };
-    
+
     if (loading || !rfq || !adminUser) {
         return <div className="container py-8"><Skeleton className="h-screen w-full" /></div>
     }
@@ -95,7 +103,7 @@ export default function AdminRfqWorkspacePage() {
                 Back to RFQ Inbox
             </Link>
 
-             <div className="flex justify-between items-center mb-6">
+            <div className="flex justify-between items-center mb-6">
                 <div>
                     <h1 className="font-headline text-3xl font-bold tracking-tight">RFQ Workspace</h1>
                     <p className="text-muted-foreground">Manage RFQ ID: {rfq.id}</p>
@@ -104,10 +112,10 @@ export default function AdminRfqWorkspacePage() {
 
             <div className="grid lg:grid-cols-3 gap-8">
                 <div className="lg:col-span-2 space-y-6">
-                     <Card>
+                    <Card>
                         <CardHeader><CardTitle>Deal Timeline</CardTitle></CardHeader>
                         <CardContent>
-                           <DealTimeline rfq={rfq} />
+                            <DealTimeline rfq={rfq} />
                         </CardContent>
                     </Card>
                     <Card>
@@ -116,17 +124,17 @@ export default function AdminRfqWorkspacePage() {
                             <CardDescription>Chat with {buyer?.name || 'the buyer'} about their request.</CardDescription>
                         </CardHeader>
                         <CardContent>
-                           <MessagingThread rfqId={rfq.id} />
+                            <MessagingThread rfqId={rfq.id} />
                         </CardContent>
                     </Card>
-                     <Card>
+                    <Card>
                         <CardHeader><CardTitle>Internal Notes</CardTitle></CardHeader>
                         <CardContent>
-                            <Textarea 
-                                placeholder="Add private notes for your team here..." 
+                            <Textarea
+                                placeholder="Add private notes for your team here..."
                                 rows={5}
                                 value={internalNote}
-                                onChange={(e) => setInternalNote(e.target.value)} 
+                                onChange={(e) => setInternalNote(e.target.value)}
                             />
                             <Button className="mt-2" onClick={handleSaveNote} disabled={internalNote === (rfq.internalOpsNotes || '')}>
                                 Save Note

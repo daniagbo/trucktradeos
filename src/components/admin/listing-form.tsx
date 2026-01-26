@@ -40,10 +40,10 @@ const documentSchema = z.object({
 });
 
 const internalNoteSchema = z.object({
-    id: z.string(),
-    note: z.string(),
-    authorId: z.string(),
-    createdAt: z.string(),
+  id: z.string(),
+  note: z.string(),
+  authorId: z.string(),
+  createdAt: z.string(),
 });
 
 const formSchema = z.object({
@@ -63,6 +63,12 @@ const formSchema = z.object({
   verificationStatus: z.enum(['Unverified', 'Pending', 'Verified']),
   documents: z.array(documentSchema),
   internalNotes: z.array(internalNoteSchema),
+  // Missing fields with defaults
+  type: z.enum(['single', 'lot']).default('single'),
+  quantity: z.number().default(1),
+  availabilityStatus: z.enum(['available', 'expected', 'reserved', 'sold']).default('available'),
+  isFleetSeller: z.boolean().default(false),
+  isExportReady: z.boolean().default(false),
 });
 
 type ListingFormValues = z.infer<typeof formSchema>;
@@ -80,32 +86,32 @@ function EnhanceButton({ getValues, setValue }: { getValues: any, setValue: any 
     const category = getValues('category');
     const specs = getValues('specs');
     const existingDescription = getValues('description');
-    
-    const specsObject = specs.reduce((acc: Record<string,string>, spec: Spec) => {
-        if(spec.key && spec.value) acc[spec.key] = spec.value;
-        return acc;
+
+    const specsObject = specs.reduce((acc: Record<string, string>, spec: Spec) => {
+      if (spec.key && spec.value) acc[spec.key] = spec.value;
+      return acc;
     }, {});
-    
+
     const formData = new FormData();
     formData.append('category', category);
     formData.append('specs', JSON.stringify(specsObject));
     formData.append('existingDescription', existingDescription);
 
     const result = await enhanceWithAI(null, formData);
-    
+
     if (result.enhancedDescription) {
-        setValue('description', result.enhancedDescription, { shouldDirty: true });
-        toast({ title: "Description Enhanced", description: "The AI has generated a new description." });
+      setValue('description', result.enhancedDescription, { shouldDirty: true });
+      toast({ title: "Description Enhanced", description: "The AI has generated a new description." });
     } else {
-        toast({ variant: 'destructive', title: "Enhancement Failed", description: result.message });
+      toast({ variant: 'destructive', title: "Enhancement Failed", description: result.message });
     }
     setPending(false);
   };
-  
+
   return (
     <Button type="button" variant="outline" size="sm" onClick={handleEnhance} disabled={pending}>
-        {pending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
-        Enhance with AI
+      {pending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
+      Enhance with AI
     </Button>
   );
 }
@@ -147,17 +153,17 @@ export default function ListingForm({ existingListing }: ListingFormProps) {
     control: form.control,
     name: 'specs',
   });
-  
+
   const { fields: mediaFields, append: appendMedia, remove: removeMedia } = useFieldArray({
     control: form.control,
     name: 'media',
   });
-  
+
   const { fields: documentFields, append: appendDocument, remove: removeDocument } = useFieldArray({
     control: form.control,
     name: 'documents',
   });
-  
+
   const { fields: noteFields, append: appendNote } = useFieldArray({
     control: form.control,
     name: 'internalNotes',
@@ -177,13 +183,13 @@ export default function ListingForm({ existingListing }: ListingFormProps) {
 
   const handleAddNewNote = () => {
     if (newNote.trim() && user) {
-        appendNote({
-            id: `note-${Date.now()}`,
-            note: newNote.trim(),
-            authorId: user.id,
-            createdAt: new Date().toISOString()
-        });
-        setNewNote('');
+      appendNote({
+        id: `note-${Date.now()}`,
+        note: newNote.trim(),
+        authorId: user.id,
+        createdAt: new Date().toISOString()
+      });
+      setNewNote('');
     }
   };
 
@@ -199,13 +205,13 @@ export default function ListingForm({ existingListing }: ListingFormProps) {
             )} />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField control={form.control} name="category" render={({ field }) => (
-                <FormItem><FormLabel>Category</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl><SelectContent><SelectItem value="Truck">Truck</SelectItem><SelectItem value="Trailer">Trailer</SelectItem><SelectItem value="Heavy Equipment">Heavy Equipment</SelectItem></SelectContent></Select><FormMessage /></FormItem>
+                <FormItem><FormLabel>Category</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent><SelectItem value="Truck">Truck</SelectItem><SelectItem value="Trailer">Trailer</SelectItem><SelectItem value="Heavy Equipment">Heavy Equipment</SelectItem></SelectContent></Select><FormMessage /></FormItem>
               )} />
               <FormField control={form.control} name="brand" render={({ field }) => (
                 <FormItem><FormLabel>Brand</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
               )} />
             </div>
-             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField control={form.control} name="model" render={({ field }) => (
                 <FormItem><FormLabel>Model</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
               )} />
@@ -221,7 +227,7 @@ export default function ListingForm({ existingListing }: ListingFormProps) {
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <FormField control={form.control} name="condition" render={({ field }) => (
-                <FormItem><FormLabel>Condition</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl><SelectContent><SelectItem value="Excellent">Excellent</SelectItem><SelectItem value="Good">Good</SelectItem><SelectItem value="Used">Used</SelectItem><SelectItem value="As-is">As-is</SelectItem></SelectContent></Select><FormMessage /></FormItem>
+                <FormItem><FormLabel>Condition</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent><SelectItem value="Excellent">Excellent</SelectItem><SelectItem value="Good">Good</SelectItem><SelectItem value="Used">Used</SelectItem><SelectItem value="As-is">As-is</SelectItem></SelectContent></Select><FormMessage /></FormItem>
               )} />
               <FormField control={form.control} name="country" render={({ field }) => (
                 <FormItem><FormLabel>Country</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
@@ -233,111 +239,111 @@ export default function ListingForm({ existingListing }: ListingFormProps) {
             <FormField control={form.control} name="description" render={({ field }) => (
               <FormItem><div className="flex justify-between items-center"><FormLabel>Description</FormLabel><EnhanceButton getValues={form.getValues} setValue={form.setValue} /></div><FormControl><Textarea rows={5} {...field} /></FormControl><FormMessage /></FormItem>
             )} />
-             <FormField control={form.control} name="extraNotes" render={({ field }) => (
-                <FormItem><FormLabel>Extra Notes (for members)</FormLabel><FormControl><Textarea rows={3} {...field} /></FormControl><FormMessage /></FormItem>
-              )} />
+            <FormField control={form.control} name="extraNotes" render={({ field }) => (
+              <FormItem><FormLabel>Extra Notes (for members)</FormLabel><FormControl><Textarea rows={3} {...field} /></FormControl><FormMessage /></FormItem>
+            )} />
           </CardContent>
         </Card>
-        
+
         <Card>
-            <CardHeader><CardTitle>Specifications</CardTitle></CardHeader>
-            <CardContent>
-                {specFields.map((field, index) => (
-                    <div key={field.id} className="flex gap-2 items-end mb-2">
-                        <FormField control={form.control} name={`specs.${index}.key`} render={({ field }) => (<FormItem className="flex-1"><FormLabel className={index !== 0 ? 'sr-only' : ''}>Key</FormLabel><FormControl><Input placeholder="e.g. Mileage" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                        <FormField control={form.control} name={`specs.${index}.value`} render={({ field }) => (<FormItem className="flex-1"><FormLabel className={index !== 0 ? 'sr-only' : ''}>Value</FormLabel><FormControl><Input placeholder="e.g. 50,000 km" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                        <Button type="button" variant="ghost" size="icon" onClick={() => removeSpec(index)}><Trash2 className="h-4 w-4" /></Button>
+          <CardHeader><CardTitle>Specifications</CardTitle></CardHeader>
+          <CardContent>
+            {specFields.map((field, index) => (
+              <div key={field.id} className="flex gap-2 items-end mb-2">
+                <FormField control={form.control} name={`specs.${index}.key`} render={({ field }) => (<FormItem className="flex-1"><FormLabel className={index !== 0 ? 'sr-only' : ''}>Key</FormLabel><FormControl><Input placeholder="e.g. Mileage" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                <FormField control={form.control} name={`specs.${index}.value`} render={({ field }) => (<FormItem className="flex-1"><FormLabel className={index !== 0 ? 'sr-only' : ''}>Value</FormLabel><FormControl><Input placeholder="e.g. 50,000 km" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                <Button type="button" variant="ghost" size="icon" onClick={() => removeSpec(index)}><Trash2 className="h-4 w-4" /></Button>
+              </div>
+            ))}
+            <Button type="button" size="sm" variant="outline" onClick={() => appendSpec({ key: '', value: '' })}><PlusCircle className="mr-2 h-4 w-4" />Add Spec</Button>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader><CardTitle>Media</CardTitle></CardHeader>
+          <CardContent>
+            <FormField name="media" control={form.control} render={({ field }) => (
+              <FormItem>
+                <Select onValueChange={(val) => {
+                  const image = PlaceHolderImages.find(p => p.imageUrl === val);
+                  if (image && !mediaFields.some(f => f.url === val)) {
+                    appendMedia({ id: image.id, url: image.imageUrl, imageHint: image.imageHint, sortOrder: mediaFields.length + 1 });
+                  }
+                }}>
+                  <FormControl><SelectTrigger><SelectValue placeholder="Select an image to add..." /></SelectTrigger></FormControl>
+                  <SelectContent>
+                    {PlaceHolderImages.map(img => (
+                      <SelectItem key={img.id} value={img.imageUrl} disabled={mediaFields.some(f => f.url === img.imageUrl)}>
+                        {img.description}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )} />
+
+            <div className="mt-4 grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-4">
+              {mediaFields.map((field, index) => (
+                <div key={field.id} className="relative aspect-square">
+                  <img src={field.url} alt="listing media" className="rounded-md object-cover w-full h-full" />
+                  <Button type="button" variant="destructive" size="icon" className="absolute -top-2 -right-2 h-6 w-6 rounded-full" onClick={() => removeMedia(index)}><X className="h-4 w-4" /></Button>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader><CardTitle>Verification &amp; Documents</CardTitle></CardHeader>
+          <CardContent className="space-y-6">
+            <FormField control={form.control} name="verificationStatus" render={({ field }) => (
+              <FormItem><FormLabel>Verification Status</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent>
+                <SelectItem value="Unverified">Unverified</SelectItem>
+                <SelectItem value="Pending">Pending</SelectItem>
+                <SelectItem value="Verified">Verified</SelectItem>
+              </SelectContent></Select><FormMessage /></FormItem>
+            )} />
+
+            <div>
+              <FormLabel>Documents</FormLabel>
+              <div className="mt-2 space-y-2">
+                {documentFields.map((field, index) => (
+                  <div key={field.id} className="flex items-center gap-2 p-2 border rounded-md">
+                    <FileText className="h-5 w-5 text-muted-foreground" />
+                    <div className="flex-1">
+                      <p className="text-sm font-medium">{field.name}</p>
+                      <p className="text-xs text-muted-foreground">{field.type}</p>
                     </div>
+                    <Button type="button" variant="ghost" size="icon" onClick={() => removeDocument(index)}><Trash2 className="h-4 w-4" /></Button>
+                  </div>
                 ))}
-                <Button type="button" size="sm" variant="outline" onClick={() => appendSpec({ key: '', value: '' })}><PlusCircle className="mr-2 h-4 w-4" />Add Spec</Button>
-            </CardContent>
+              </div>
+              <Button type="button" size="sm" variant="outline" className="mt-2" onClick={() => appendDocument({ id: `doc-${Date.now()}`, name: 'New Document.pdf', type: 'Registration', url: '#', createdAt: new Date().toISOString() })}>
+                <PlusCircle className="mr-2 h-4 w-4" /> Add Mock Document
+              </Button>
+            </div>
+          </CardContent>
         </Card>
 
         <Card>
-            <CardHeader><CardTitle>Media</CardTitle></CardHeader>
-            <CardContent>
-                <FormField name="media" control={form.control} render={({ field }) => (
-                  <FormItem>
-                    <Select onValueChange={(val) => {
-                       const image = PlaceHolderImages.find(p => p.imageUrl === val);
-                       if (image && !mediaFields.some(f => f.url === val)) {
-                          appendMedia({ id: image.id, url: image.imageUrl, imageHint: image.imageHint, sortOrder: mediaFields.length + 1 });
-                       }
-                    }}>
-                        <FormControl><SelectTrigger><SelectValue placeholder="Select an image to add..." /></SelectTrigger></FormControl>
-                        <SelectContent>
-                            {PlaceHolderImages.map(img => (
-                                <SelectItem key={img.id} value={img.imageUrl} disabled={mediaFields.some(f => f.url === img.imageUrl)}>
-                                    {img.description}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-
-                <div className="mt-4 grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-4">
-                    {mediaFields.map((field, index) => (
-                        <div key={field.id} className="relative aspect-square">
-                            <img src={field.url} alt="listing media" className="rounded-md object-cover w-full h-full" />
-                            <Button type="button" variant="destructive" size="icon" className="absolute -top-2 -right-2 h-6 w-6 rounded-full" onClick={() => removeMedia(index)}><X className="h-4 w-4" /></Button>
-                        </div>
-                    ))}
+          <CardHeader><CardTitle>Internal Notes</CardTitle></CardHeader>
+          <CardContent>
+            <div className="space-y-2 max-h-60 overflow-y-auto">
+              {noteFields.map((field) => (
+                <div key={field.id} className="p-3 border rounded-md bg-secondary/50">
+                  <p className="text-sm">{field.note}</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    By Admin on {new Date(field.createdAt).toLocaleDateString()}
+                  </p>
                 </div>
-            </CardContent>
-        </Card>
-
-        <Card>
-            <CardHeader><CardTitle>Verification &amp; Documents</CardTitle></CardHeader>
-            <CardContent className="space-y-6">
-                <FormField control={form.control} name="verificationStatus" render={({ field }) => (
-                <FormItem><FormLabel>Verification Status</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl><SelectContent>
-                    <SelectItem value="Unverified">Unverified</SelectItem>
-                    <SelectItem value="Pending">Pending</SelectItem>
-                    <SelectItem value="Verified">Verified</SelectItem>
-                </SelectContent></Select><FormMessage /></FormItem>
-                )} />
-                
-                <div>
-                    <FormLabel>Documents</FormLabel>
-                    <div className="mt-2 space-y-2">
-                        {documentFields.map((field, index) => (
-                            <div key={field.id} className="flex items-center gap-2 p-2 border rounded-md">
-                                <FileText className="h-5 w-5 text-muted-foreground" />
-                                <div className="flex-1">
-                                    <p className="text-sm font-medium">{field.name}</p>
-                                    <p className="text-xs text-muted-foreground">{field.type}</p>
-                                </div>
-                                <Button type="button" variant="ghost" size="icon" onClick={() => removeDocument(index)}><Trash2 className="h-4 w-4" /></Button>
-                            </div>
-                        ))}
-                    </div>
-                    <Button type="button" size="sm" variant="outline" className="mt-2" onClick={() => appendDocument({ id: `doc-${Date.now()}`, name: 'New Document.pdf', type: 'Registration', url: '#', createdAt: new Date().toISOString() })}>
-                        <PlusCircle className="mr-2 h-4 w-4" /> Add Mock Document
-                    </Button>
-                </div>
-            </CardContent>
-        </Card>
-
-        <Card>
-            <CardHeader><CardTitle>Internal Notes</CardTitle></CardHeader>
-            <CardContent>
-                <div className="space-y-2 max-h-60 overflow-y-auto">
-                    {noteFields.map((field) => (
-                        <div key={field.id} className="p-3 border rounded-md bg-secondary/50">
-                            <p className="text-sm">{field.note}</p>
-                            <p className="text-xs text-muted-foreground mt-1">
-                                By Admin on {new Date(field.createdAt).toLocaleDateString()}
-                            </p>
-                        </div>
-                    ))}
-                </div>
-                <div className="mt-4 flex gap-2">
-                    <Textarea placeholder="Add a new internal note..." value={newNote} onChange={(e) => setNewNote(e.target.value)} />
-                    <Button type="button" onClick={handleAddNewNote} disabled={!newNote.trim()}>Add Note</Button>
-                </div>
-            </CardContent>
+              ))}
+            </div>
+            <div className="mt-4 flex gap-2">
+              <Textarea placeholder="Add a new internal note..." value={newNote} onChange={(e) => setNewNote(e.target.value)} />
+              <Button type="button" onClick={handleAddNewNote} disabled={!newNote.trim()}>Add Note</Button>
+            </div>
+          </CardContent>
         </Card>
 
 
@@ -345,7 +351,7 @@ export default function ListingForm({ existingListing }: ListingFormProps) {
           <CardHeader><CardTitle>Visibility</CardTitle></CardHeader>
           <CardContent>
             <FormField control={form.control} name="visibility" render={({ field }) => (
-              <FormItem><FormLabel>Listing Visibility</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl><SelectContent><SelectItem value="public">Public</SelectItem><SelectItem value="members">Members Only</SelectItem><SelectItem value="hidden">Hidden</SelectItem></SelectContent></Select><FormMessage /></FormItem>
+              <FormItem><FormLabel>Listing Visibility</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent><SelectItem value="public">Public</SelectItem><SelectItem value="members">Members Only</SelectItem><SelectItem value="hidden">Hidden</SelectItem></SelectContent></Select><FormMessage /></FormItem>
             )} />
           </CardContent>
         </Card>

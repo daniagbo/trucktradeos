@@ -1,7 +1,8 @@
 import ListingDetailView from '@/components/listings/listing-detail-view';
 
-export default function ListingDetailPage({ params }: { params: { id: string } }) {
+export default async function ListingDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   return (
-    <ListingDetailView listingId={params.id} />
+    <ListingDetailView listingId={id} />
   );
 }

@@ -3,45 +3,7 @@ import { PlaceHolderImages } from './placeholder-images';
 
 const getImage = (id: string) => PlaceHolderImages.find(img => img.id === id);
 
-export const mockUsers: User[] = [
-  {
-    id: 'user-1',
-    email: 'admin@marketplace.com',
-    passwordHash: 'hashedpassword',
-    role: 'admin',
-    accountType: 'company',
-    name: 'Admin User',
-    phone: '123-456-7890',
-    country: 'Netherlands',
-    companyName: 'Marketplace Inc.',
-    vat: 'NL123456789B01',
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: 'user-2',
-    email: 'member@marketplace.com',
-    passwordHash: 'hashedpassword',
-    role: 'member',
-    accountType: 'company',
-    name: 'Member User',
-    phone: '098-765-4321',
-    country: 'Germany',
-    companyName: 'Transport GmbH',
-    vat: 'DE987654321',
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: 'user-3',
-    email: 'individual@marketplace.com',
-    passwordHash: 'hashedpassword',
-    role: 'member',
-    accountType: 'individual',
-    name: 'Individual Buyer',
-    phone: '555-555-5555',
-    country: 'USA',
-    createdAt: new Date().toISOString(),
-  },
-];
+// Mock users removed in favor of real DB auth.
 
 export const mockListings: Listing[] = [
   {
@@ -75,8 +37,11 @@ export const mockListings: Listing[] = [
       { id: 'doc-2', name: 'Registration.pdf', type: 'Registration', url: '#', createdAt: new Date().toISOString() },
     ],
     internalNotes: [
-        { id: 'note-1', note: 'Supplier is very reliable. Fast paperwork.', authorId: 'user-1', createdAt: new Date().toISOString() }
+      { id: 'note-1', note: 'Supplier is very reliable. Fast paperwork.', authorId: 'user-1', createdAt: new Date().toISOString() }
     ],
+    availabilityStatus: 'available',
+    type: 'single',
+    quantity: 1,
   },
   {
     id: 'listing-2',
@@ -104,6 +69,9 @@ export const mockListings: Listing[] = [
     verificationStatus: 'Pending',
     documents: [],
     internalNotes: [],
+    availabilityStatus: 'expected',
+    type: 'single',
+    quantity: 1,
   },
   {
     id: 'listing-3',
@@ -130,9 +98,12 @@ export const mockListings: Listing[] = [
     extraNotes: 'Hydraulics recently serviced. Available for immediate pickup.',
     verificationStatus: 'Unverified',
     documents: [
-        { id: 'doc-3', name: 'Inspection Report Q3.pdf', type: 'Inspection', url: '#', createdAt: new Date().toISOString() }
+      { id: 'doc-3', name: 'Inspection Report Q3.pdf', type: 'Inspection', url: '#', createdAt: new Date().toISOString() }
     ],
     internalNotes: [],
+    availabilityStatus: 'available',
+    type: 'single',
+    quantity: 1,
   },
   {
     id: 'listing-4',
@@ -158,6 +129,9 @@ export const mockListings: Listing[] = [
     verificationStatus: 'Verified',
     documents: [],
     internalNotes: [],
+    availabilityStatus: 'reserved',
+    type: 'single',
+    quantity: 1,
   },
   {
     id: 'listing-5',
@@ -171,22 +145,87 @@ export const mockListings: Listing[] = [
     city: 'Calgary',
     description: 'CAT D6 bulldozer, fully operational. Has seen significant use in mining operations but has been professionally maintained. Strong and reliable machine.',
     specs: [
-        { key: 'Hours', value: '8,200' },
-        { key: 'Blade', value: 'SU Blade' },
-        { key: 'Undercarriage', value: '50% life remaining' },
+      { key: 'Hours', value: '8,200' },
+      { key: 'Blade', value: 'SU Blade' },
+      { key: 'Undercarriage', value: '50% life remaining' },
     ],
     visibility: 'members',
     createdAt: new Date('2023-08-01').toISOString(),
     media: [
-        { id: 'img7', url: getImage('equipment-2')?.imageUrl!, imageHint: getImage('equipment-2')?.imageHint!, sortOrder: 1 },
+      { id: 'img7', url: getImage('equipment-2')?.imageUrl!, imageHint: getImage('equipment-2')?.imageHint!, sortOrder: 1 },
     ],
     extraNotes: 'This listing is only visible to logged-in members. Full maintenance logs are attached as documents.',
     verificationStatus: 'Verified',
     documents: [
-        { id: 'doc-4', name: 'Maintenance Log.csv', type: 'Maintenance', url: '#', createdAt: new Date().toISOString() }
+      { id: 'doc-4', name: 'Maintenance Log.csv', type: 'Maintenance', url: '#', createdAt: new Date().toISOString() }
     ],
     internalNotes: [
-        { id: 'note-2', note: 'This is a high-demand item, price is firm.', authorId: 'user-1', createdAt: new Date().toISOString() }
+      { id: 'note-2', note: 'This is a high-demand item, price is firm.', authorId: 'user-1', createdAt: new Date().toISOString() }
     ],
+    availabilityStatus: 'available',
+    type: 'single',
+    quantity: 1,
   },
+  // LOTS
+  {
+    id: 'listing-lot-1',
+    title: 'Fleet Renewal: 10x Scania R 450',
+    category: 'Truck',
+    brand: 'Scania',
+    model: 'R 450',
+    year: 2018,
+    condition: 'Good',
+    country: 'Spain',
+    city: 'Madrid',
+    description: 'Bulk offer for 10 identical scania units. Well maintained fleet, all service records available. Ideal for export or fleet expansion.',
+    specs: [
+      { key: 'Total Units', value: '10' },
+      { key: 'Avg Mileage', value: '450,000 km' },
+      { key: 'Engine', value: 'DC13' },
+    ],
+    visibility: 'public',
+    createdAt: new Date().toISOString(),
+    media: [
+      { id: 'img-lot-1', url: getImage('truck-1')?.imageUrl!, imageHint: getImage('truck-1')?.imageHint!, sortOrder: 1 },
+    ],
+    verificationStatus: 'Verified',
+    documents: [],
+    internalNotes: [],
+    availabilityStatus: 'available',
+    type: 'lot',
+    quantity: 10,
+    pricePerUnit: 25000,
+    isFleetSeller: true,
+    isExportReady: true,
+  },
+  {
+    id: 'listing-lot-2',
+    title: 'Export Pack: 50x Krone Mega Liner',
+    category: 'Trailer',
+    brand: 'Krone',
+    year: 2015,
+    condition: 'Used',
+    country: 'Germany',
+    city: 'Hamburg',
+    description: 'Large batch of curtain siders available immediately. Export documents ready. Bulk discount applied.',
+    specs: [
+      { key: 'Total Units', value: '50' },
+      { key: 'Axles', value: '3' },
+      { key: 'Type', value: 'Mega Liner' },
+    ],
+    visibility: 'public',
+    createdAt: new Date().toISOString(),
+    media: [
+      { id: 'img-lot-2', url: getImage('trailer-1')?.imageUrl!, imageHint: getImage('trailer-1')?.imageHint!, sortOrder: 1 },
+    ],
+    verificationStatus: 'Verified',
+    documents: [],
+    internalNotes: [],
+    availabilityStatus: 'expected',
+    type: 'lot',
+    quantity: 50,
+    pricePerUnit: 8000,
+    isFleetSeller: true,
+    isExportReady: true,
+  }
 ];

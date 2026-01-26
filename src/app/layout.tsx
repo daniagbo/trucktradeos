@@ -5,6 +5,9 @@ import Header from '@/components/layout/header';
 import Footer from '@/components/layout/footer';
 import { ListingsProvider } from '@/lib/listings';
 import { RfqsProvider } from '@/lib/rfqs';
+import { SavedSearchesProvider } from '@/lib/saved-searches';
+import FloatingRfqButton from '@/components/rfq/floating-rfq-button';
+import { WebVitals } from '@/components/analytics/web-vitals';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -27,14 +30,18 @@ export default function RootLayout({
       <body className="font-body antialiased" suppressHydrationWarning>
         <AuthProvider>
           <ListingsProvider>
-            <RfqsProvider>
-              <div className="flex min-h-screen flex-col">
-                <Header />
-                <main className="flex-grow">{children}</main>
-                <Footer />
-              </div>
-              <Toaster />
-            </RfqsProvider>
+            <SavedSearchesProvider>
+              <RfqsProvider>
+                <div className="flex min-h-screen flex-col">
+                  <Header />
+                  <main className="flex-grow">{children}</main>
+                  <Footer />
+                </div>
+                <Toaster />
+                <FloatingRfqButton />
+                <WebVitals />
+              </RfqsProvider>
+            </SavedSearchesProvider>
           </ListingsProvider>
         </AuthProvider>
       </body>

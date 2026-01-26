@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 import { format } from 'date-fns';
-import { Banknote, Calendar, Check, Package, ThumbsDown, Truck, X } from 'lucide-react';
+import { Banknote, Calendar, Check, CheckCircle, Package, ThumbsDown, Truck, X } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '../ui/alert-dialog';
 import { Textarea } from '../ui/textarea';
 
@@ -51,7 +51,7 @@ export default function OfferCard({ offer, hasActiveOffer }: OfferCardProps) {
                     <div className="flex items-center gap-2"><Package className="w-4 h-4 text-muted-foreground" /> <div><strong>Availability:</strong><br />{offer.availabilityText}</div></div>
                 </div>
                 {offer.notes && <p className="text-sm text-muted-foreground pt-4 border-t">{offer.notes}</p>}
-                
+
                 {Object.keys(offer.includedFlags).length > 0 && (
                     <div className="pt-4 border-t">
                         <h4 className="font-semibold text-sm mb-2">Included in this offer:</h4>
@@ -87,13 +87,13 @@ export default function OfferCard({ offer, hasActiveOffer }: OfferCardProps) {
                             <Button variant="outline" className="w-full"><ThumbsDown className="mr-2 h-4 w-4" /> Decline</Button>
                         </AlertDialogTrigger>
                         <AlertDialogContent>
-                             <AlertDialogHeader>
+                            <AlertDialogHeader>
                                 <AlertDialogTitle>Decline Offer</AlertDialogTitle>
                                 <AlertDialogDescription>
                                     Please provide a reason for declining this offer to help us better serve you in the future.
                                 </AlertDialogDescription>
                             </AlertDialogHeader>
-                            <Textarea 
+                            <Textarea
                                 placeholder="Optional: e.g., Price is too high, found a different option..."
                                 value={declineReason}
                                 onChange={(e) => setDeclineReason(e.target.value)}

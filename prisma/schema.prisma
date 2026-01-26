@@ -1,0 +1,295 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  engineType = "library"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================================
+// ENUMS
+// ============================================================================
+
+enum Role {
+  ADMIN
+  MEMBER
+}
+
+enum AccountType {
+  INDIVIDUAL
+  COMPANY
+}
+
+enum Category {
+  TRUCK
+  TRAILER
+  HEAVY_EQUIPMENT
+}
+
+enum Condition {
+  EXCELLENT
+  GOOD
+  USED
+  AS_IS
+}
+
+enum Visibility {
+  PUBLIC
+  MEMBERS
+  HIDDEN
+}
+
+enum VerificationStatus {
+  UNVERIFIED
+  PENDING
+  VERIFIED
+}
+
+enum AvailabilityStatus {
+  AVAILABLE
+  EXPECTED
+  RESERVED
+  SOLD
+}
+
+enum ListingType {
+  SINGLE
+  LOT
+}
+
+enum RFQStatus {
+  RECEIVED
+  REVIEWING
+  OFFER_SENT
+  PENDING_EXECUTION
+  WON
+  LOST
+}
+
+enum OfferStatus {
+  DRAFT
+  SENT
+  ACCEPTED
+  DECLINED
+  EXPIRED
+}
+
+enum DocumentType {
+  REGISTRATION
+  COC
+  INSPECTION
+  MAINTENANCE
+}
+
+// ============================================================================
+// MODELS
+// ============================================================================
+
+model User {
+  id           String      @id @default(cuid())
+  email        String      @unique
+  passwordHash String
+  role         Role        @default(MEMBER)
+  accountType  AccountType @default(INDIVIDUAL)
+  name         String
+  phone        String?
+  country      String
+  companyName  String?
+  vat          String?
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  // Relations
+  listings      Listing[]
+  rfqs          RFQ[]
+  internalNotes InternalNote[]
+  auditLogs     AuditLog[]
+
+  @@map("users")
+}
+
+model Listing {
+  id                 String             @id @default(cuid())
+  title              String
+  category           Category
+  brand              String
+  model              String?
+  year               Int?
+  condition          Condition
+  country            String
+  city               String?
+  description        String             @db.Text
+  extraNotes         String?            @db.Text
+  visibility         Visibility         @default(PUBLIC)
+  verificationStatus VerificationStatus @default(UNVERIFIED)
+  availabilityStatus AvailabilityStatus @default(AVAILABLE)
+  type               ListingType        @default(SINGLE)
+  quantity           Int                @default(1)
+  pricePerUnit       Float?
+  isFleetSeller      Boolean            @default(false)
+  isExportReady      Boolean            @default(false)
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  // Relations
+  creatorId     String
+  creator       User           @relation(fields: [creatorId], references: [id])
+  media         Media[]
+  specs         Spec[]
+  documents     Document[]
+  internalNotes InternalNote[]
+  rfqs          RFQ[]
+
+  @@index([category])
+  @@index([country])
+  @@index([createdAt])
+  @@map("listings")
+}
+
+model Media {
+  id        String  @id @default(cuid())
+  url       String
+  imageHint String?
+  sortOrder Int     @default(0)
+
+  listingId String
+  listing   Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@map("media")
+}
+
+model Spec {
+  id    String @id @default(cuid())
+  key   String
+  value String
+
+  listingId String
+  listing   Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@map("specs")
+}
+
+model Document {
+  id        String       @id @default(cuid())
+  name      String
+  type      DocumentType
+  url       String
+  createdAt DateTime     @default(now())
+
+  listingId String
+  listing   Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@map("documents")
+}
+
+model InternalNote {
+  id        String   @id @default(cuid())
+  note      String   @db.Text
+  createdAt DateTime @default(now())
+
+  authorId  String
+  author    User    @relation(fields: [authorId], references: [id])
+  listingId String
+  listing   Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@map("internal_notes")
+}
+
+model RFQ {
+  id              String    @id @default(cuid())
+  status          RFQStatus @default(RECEIVED)
+  category        String?
+  brand           String?
+  requirements    String    @db.Text
+  quantity        Int       @default(1)
+  budget          String?
+  urgency         String?
+  internalOpsNotes String?  @db.Text
+  closeReason     String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  // Relations
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  listingId String?
+  listing   Listing? @relation(fields: [listingId], references: [id])
+  offers    Offer[]
+  messages  RFQMessage[]
+  events    RFQEvent[]
+
+  @@index([status])
+  @@index([createdAt])
+  @@map("rfqs")
+}
+
+model Offer {
+  id               String      @id @default(cuid())
+  title            String
+  status           OfferStatus @default(DRAFT)
+  price            Float?
+  currency         String      @default("USD")
+  terms            String?
+  location         String?
+  availabilityText String?
+  validUntil       DateTime
+  notes            String?     @db.Text
+  includedFlags    Json        @default("{}")
+  versionNumber    Int         @default(1)
+  declineReason    String?
+  sentAt           DateTime?
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+
+  rfqId     String
+  rfq       RFQ     @relation(fields: [rfqId], references: [id], onDelete: Cascade)
+  listingId String?
+
+  @@map("offers")
+}
+
+model RFQMessage {
+  id         String   @id @default(cuid())
+  message    String   @db.Text
+  senderType String   // 'admin' | 'buyer'
+  createdAt  DateTime @default(now())
+
+  rfqId String
+  rfq   RFQ    @relation(fields: [rfqId], references: [id], onDelete: Cascade)
+
+  @@map("rfq_messages")
+}
+
+model RFQEvent {
+  id        String   @id @default(cuid())
+  type      String   // 'status_change' | 'message' | 'offer_sent' etc.
+  payload   Json
+  timestamp DateTime @default(now())
+
+  rfqId String
+  rfq   RFQ    @relation(fields: [rfqId], references: [id], onDelete: Cascade)
+
+  @@map("rfq_events")
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  action    String   // "listing.create", "rfq.update"
+  entityId  String?
+  metadata  Json?
+  ip        String?
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  @@index([action])
+  @@index([createdAt])
+  @@map("audit_logs")
+}

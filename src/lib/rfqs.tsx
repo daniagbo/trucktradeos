@@ -55,30 +55,30 @@ export const RfqsProvider = ({ children }: { children: ReactNode }) => {
 
     const storedOffers = localStorage.getItem(OFFERS_STORAGE_KEY);
     if (!storedOffers) {
-        localStorage.setItem(OFFERS_STORAGE_KEY, JSON.stringify(mockOffers));
-        setOffers(mockOffers);
+      localStorage.setItem(OFFERS_STORAGE_KEY, JSON.stringify(mockOffers));
+      setOffers(mockOffers);
     } else {
-        setOffers(JSON.parse(storedOffers));
+      setOffers(JSON.parse(storedOffers));
     }
 
     setLoading(false);
   }, []);
-  
+
   const addEventToRfq = useCallback((rfqId: string, eventData: Omit<RFQEvent, 'id' | 'timestamp'>) => {
     setRfqs(prevRfqs => {
-        const newRfqs = prevRfqs.map(r => {
-            if (r.id === rfqId) {
-                const newEvent: RFQEvent = {
-                    ...eventData,
-                    id: `event-${Date.now()}`,
-                    timestamp: new Date().toISOString(),
-                };
-                return { ...r, events: [...r.events, newEvent] };
-            }
-            return r;
-        });
-        localStorage.setItem(RFQS_STORAGE_KEY, JSON.stringify(newRfqs));
-        return newRfqs;
+      const newRfqs = prevRfqs.map(r => {
+        if (r.id === rfqId) {
+          const newEvent: RFQEvent = {
+            ...eventData,
+            id: `event-${Date.now()}`,
+            timestamp: new Date().toISOString(),
+          };
+          return { ...r, events: [...r.events, newEvent] };
+        }
+        return r;
+      });
+      localStorage.setItem(RFQS_STORAGE_KEY, JSON.stringify(newRfqs));
+      return newRfqs;
     });
   }, []);
 
@@ -87,13 +87,13 @@ export const RfqsProvider = ({ children }: { children: ReactNode }) => {
     if (rfq && rfq.status === status) return; // Avoid redundant updates and events
 
     setRfqs(prevRfqs => {
-        const updatedRfqs = prevRfqs.map(r => r.id === rfqId ? { ...r, status } : r);
-        localStorage.setItem(RFQS_STORAGE_KEY, JSON.stringify(updatedRfqs));
-        return updatedRfqs;
+      const updatedRfqs = prevRfqs.map(r => r.id === rfqId ? { ...r, status } : r);
+      localStorage.setItem(RFQS_STORAGE_KEY, JSON.stringify(updatedRfqs));
+      return updatedRfqs;
     });
 
     addEventToRfq(rfqId, { type: 'status_change', payload: { status } });
-    toast({ title: 'Status Updated', description: `RFQ status changed to ${status}.`});
+    toast({ title: 'Status Updated', description: `RFQ status changed to ${status}.` });
   }, [rfqs, toast, addEventToRfq]);
 
 
@@ -104,13 +104,13 @@ export const RfqsProvider = ({ children }: { children: ReactNode }) => {
   const getRfqById = useCallback((id: string) => {
     return rfqs.find(rfq => rfq.id === id);
   }, [rfqs]);
-  
+
   const getMessagesForRfq = useCallback((rfqId: string) => {
-    return messages.filter(msg => msg.rfqId === rfqId).sort((a,b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+    return messages.filter(msg => msg.rfqId === rfqId).sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
   }, [messages]);
-  
+
   const getOffersForRfq = useCallback((rfqId: string) => {
-    return offers.filter(o => o.rfqId === rfqId).sort((a,b) => b.versionNumber - a.versionNumber);
+    return offers.filter(o => o.rfqId === rfqId).sort((a, b) => b.versionNumber - a.versionNumber);
   }, [offers]);
 
   const addRfq = useCallback(async (rfqData: Omit<RFQ, 'id' | 'createdAt' | 'status' | 'events'>): Promise<RFQ> => {
@@ -121,13 +121,13 @@ export const RfqsProvider = ({ children }: { children: ReactNode }) => {
       status: 'Received',
       events: [],
     };
-    
+
     addEventToRfq(newRfq.id, { type: 'status_change', payload: { status: 'Received' } });
 
     const updatedRfqs = [newRfq, ...rfqs];
     setRfqs(updatedRfqs);
     localStorage.setItem(RFQS_STORAGE_KEY, JSON.stringify(updatedRfqs));
-    
+
     toast({ title: 'Request Submitted', description: 'Your sourcing request has been received.' });
     return newRfq;
   }, [rfqs, toast, addEventToRfq]);
@@ -149,75 +149,75 @@ export const RfqsProvider = ({ children }: { children: ReactNode }) => {
     setMessages(updatedMessages);
     localStorage.setItem(RFQ_MESSAGES_STORAGE_KEY, JSON.stringify(updatedMessages));
 
-    addEventToRfq(newMessage.rfqId, { type: 'message', payload: { message: newMessage.message, author: messageData.senderType === 'admin' ? 'Admin' : 'Buyer' }});
+    addEventToRfq(newMessage.rfqId, { type: 'message', payload: { message: newMessage.message, author: messageData.senderType === 'admin' ? 'Admin' : 'Buyer' } });
   }, [messages, addEventToRfq]);
 
-  const addOffer = useCallback(async (offerData: Omit<Offer, 'id'|'createdAt'|'status'|'versionNumber'>) : Promise<Offer> => {
+  const addOffer = useCallback(async (offerData: Omit<Offer, 'id' | 'createdAt' | 'status' | 'versionNumber'>): Promise<Offer> => {
     const existingOffers = offers.filter(o => o.rfqId === offerData.rfqId);
     const newVersion = existingOffers.length > 0 ? Math.max(...existingOffers.map(o => o.versionNumber)) + 1 : 1;
 
     const newOffer: Offer = {
-        ...offerData,
-        id: `offer-${Date.now()}`,
-        createdAt: new Date().toISOString(),
-        sentAt: new Date().toISOString(),
-        status: 'Sent',
-        versionNumber: newVersion,
+      ...offerData,
+      id: `offer-${Date.now()}`,
+      createdAt: new Date().toISOString(),
+      sentAt: new Date().toISOString(),
+      status: 'Sent',
+      versionNumber: newVersion,
     };
-    
+
     const updatedOffers = [newOffer, ...offers];
     setOffers(updatedOffers);
     localStorage.setItem(OFFERS_STORAGE_KEY, JSON.stringify(updatedOffers));
 
     updateRfqStatus(newOffer.rfqId, 'Offer sent');
     addEventToRfq(newOffer.rfqId, {
-        type: 'offer_sent',
-        payload: { offerId: newOffer.id, title: newOffer.title }
+      type: 'offer_sent',
+      payload: { offerId: newOffer.id, title: newOffer.title }
     });
-    
+
     toast({ title: 'Offer Sent', description: 'The offer has been sent to the buyer.' });
     return newOffer;
-}, [offers, toast, updateRfqStatus, addEventToRfq]);
+  }, [offers, toast, updateRfqStatus, addEventToRfq]);
 
 
-const updateOfferStatus = useCallback((offerId: string, status: OfferStatus, reason?: string) => {
+  const updateOfferStatus = useCallback((offerId: string, status: OfferStatus, reason?: string) => {
     const offer = offers.find(o => o.id === offerId);
     if (!offer) return;
-    
+
     if (status === 'Accepted') {
-        // Decline all other offers for this RFQ
-        const otherOfferIds = offers.filter(o => o.rfqId === offer.rfqId && o.id !== offerId).map(o => o.id);
-        const updatedOffers = offers.map(o => {
-            if (o.id === offerId) return { ...o, status: 'Accepted' };
-            if (otherOfferIds.includes(o.id)) return { ...o, status: 'Declined' as OfferStatus, declineReason: 'Another offer was accepted.' };
-            return o;
-        });
-        setOffers(updatedOffers);
-        localStorage.setItem(OFFERS_STORAGE_KEY, JSON.stringify(updatedOffers));
-        updateRfqStatus(offer.rfqId, 'Pending execution');
-        addEventToRfq(offer.rfqId, { type: 'offer_accepted', payload: { offerId: offer.id, title: offer.title }});
-        toast({ title: 'Offer Accepted!', description: 'Next steps have been initiated.' });
+      // Decline all other offers for this RFQ
+      const otherOfferIds = offers.filter(o => o.rfqId === offer.rfqId && o.id !== offerId).map(o => o.id);
+      const updatedOffers = offers.map(o => {
+        if (o.id === offerId) return { ...o, status: 'Accepted' };
+        if (otherOfferIds.includes(o.id)) return { ...o, status: 'Declined' as OfferStatus, declineReason: 'Another offer was accepted.' };
+        return o;
+      });
+      setOffers(updatedOffers as Offer[]);
+      localStorage.setItem(OFFERS_STORAGE_KEY, JSON.stringify(updatedOffers));
+      updateRfqStatus(offer.rfqId, 'Pending execution');
+      addEventToRfq(offer.rfqId, { type: 'offer_accepted', payload: { offerId: offer.id, title: offer.title } });
+      toast({ title: 'Offer Accepted!', description: 'Next steps have been initiated.' });
 
     } else {
-        const updatedOffers = offers.map(o => o.id === offerId ? { ...o, status, declineReason: reason } : o);
-        setOffers(updatedOffers);
-        localStorage.setItem(OFFERS_STORAGE_KEY, JSON.stringify(updatedOffers));
+      const updatedOffers = offers.map(o => o.id === offerId ? { ...o, status, declineReason: reason } : o);
+      setOffers(updatedOffers);
+      localStorage.setItem(OFFERS_STORAGE_KEY, JSON.stringify(updatedOffers));
 
-        if (status === 'Declined') {
-            addEventToRfq(offer.rfqId, { type: 'offer_declined', payload: { offerId: offer.id, title: offer.title, reason }});
-            toast({ title: 'Offer Declined', description: 'The buyer has declined the offer.' });
-        }
+      if (status === 'Declined') {
+        addEventToRfq(offer.rfqId, { type: 'offer_declined', payload: { offerId: offer.id, title: offer.title, reason } });
+        toast({ title: 'Offer Declined', description: 'The buyer has declined the offer.' });
+      }
     }
-}, [offers, toast, updateRfqStatus, addEventToRfq]);
+  }, [offers, toast, updateRfqStatus, addEventToRfq]);
 
 
-const closeRfq = useCallback((rfqId: string, status: 'Won' | 'Lost', reason: string) => {
+  const closeRfq = useCallback((rfqId: string, status: 'Won' | 'Lost', reason: string) => {
     const updatedRfqs = rfqs.map(r => r.id === rfqId ? { ...r, status, closeReason: reason } : r);
     setRfqs(updatedRfqs);
     localStorage.setItem(RFQS_STORAGE_KEY, JSON.stringify(updatedRfqs));
     addEventToRfq(rfqId, { type: 'rfq_closed', payload: { status, reason } });
     toast({ title: `RFQ Closed as ${status}`, description: `The RFQ has been moved to a final state.` });
-}, [rfqs, toast, addEventToRfq]);
+  }, [rfqs, toast, addEventToRfq]);
 
 
   const value: RfqsContextType = {

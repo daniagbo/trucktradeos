@@ -11,6 +11,7 @@ export type ListingMedia = {
 };
 
 export type VerificationStatus = 'Unverified' | 'Pending' | 'Verified';
+export type AvailabilityStatus = 'available' | 'expected' | 'reserved' | 'sold';
 
 export type ListingDocument = {
   id: string;
@@ -47,6 +48,13 @@ export type Listing = {
   verificationStatus: VerificationStatus;
   documents: ListingDocument[];
   internalNotes: InternalNote[];
+  availabilityStatus: AvailabilityStatus;
+  // Bulk / Lot Fields
+  type: 'single' | 'lot';
+  quantity: number;
+  pricePerUnit?: number;
+  isFleetSeller?: boolean;
+  isExportReady?: boolean;
 };
 
 export type UserAccountType = 'individual' | 'company';
@@ -72,23 +80,23 @@ export type RFQStatus = 'Received' | 'In progress' | 'Offer sent' | 'Pending exe
 export type OfferStatus = 'Draft' | 'Sent' | 'Accepted' | 'Declined' | 'Expired';
 
 export type Offer = {
-    id: string;
-    rfqId: string;
-    listingId?: string;
-    title: string;
-    price?: number;
-    currency?: string;
-    terms?: string;
-    location?: string;
-    availabilityText?: string;
-    validUntil: string;
-    includedFlags: { [key: string]: boolean };
-    notes?: string;
-    status: OfferStatus;
-    createdAt: string;
-    sentAt?: string;
-    versionNumber: number;
-    declineReason?: string;
+  id: string;
+  rfqId: string;
+  listingId?: string;
+  title: string;
+  price?: number;
+  currency?: string;
+  terms?: string;
+  location?: string;
+  availabilityText?: string;
+  validUntil: string;
+  includedFlags: { [key: string]: boolean };
+  notes?: string;
+  status: OfferStatus;
+  createdAt: string;
+  sentAt?: string;
+  versionNumber: number;
+  declineReason?: string;
 };
 
 export type OfferFile = {
@@ -101,17 +109,17 @@ export type OfferFile = {
 
 
 export type RFQEvent = {
-    id: string;
-    type: 'status_change' | 'message' | 'offer_sent' | 'offer_accepted' | 'offer_declined' | 'rfq_closed';
-    timestamp: string;
-    payload: {
-        status?: RFQStatus | OfferStatus;
-        message?: string;
-        author?: string;
-        offerId?: string;
-        title?: string;
-        reason?: string;
-    }
+  id: string;
+  type: 'status_change' | 'message' | 'offer_sent' | 'offer_accepted' | 'offer_declined' | 'rfq_closed';
+  timestamp: string;
+  payload: {
+    status?: RFQStatus | OfferStatus;
+    message?: string;
+    author?: string;
+    offerId?: string;
+    title?: string;
+    reason?: string;
+  }
 };
 
 export type RFQUrgency = 'Normal' | 'Urgent';
@@ -152,3 +160,25 @@ export type RFQMessage = {
 };
 
 // --- RFQ Types End ---
+
+// --- Saved Search Types ---
+export type SavedSearch = {
+  id: string;
+  name: string;
+  filters: {
+    search?: string;
+    category?: string[];
+    brand?: string[];
+    yearMin?: number | null;
+    yearMax?: number | null;
+    country?: string[];
+    condition?: string[];
+    type?: string[];
+    quantityMin?: number | null;
+    isExportReady?: boolean;
+    availabilityStatus?: string[];
+  };
+  createdAt: string;
+  lastChecked?: string;
+};
+
