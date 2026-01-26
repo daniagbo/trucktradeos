@@ -27,16 +27,4 @@ export async function GET() {
             updatedAt: safeUser.updatedAt.toISOString()
         }
     })
-
-    // Fallback for newly registered users during audit/session
-    // In a real app, this would come from a DB
-    const syntheticUser = {
-        id: session.userId,
-        email: 'registered-user@example.com', // Placeholder since email isn't in session payload
-        name: 'New User',
-        role: session.role,
-        createdAt: new Date().toISOString()
-    }
-
-    return NextResponse.json({ user: syntheticUser })
 }

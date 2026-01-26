@@ -41,7 +41,7 @@ export const emailSchema = z
  */
 export const registerSchema = z.object({
     email: emailSchema,
-    password: passwordSchemaRelaxed, // Use relaxed for demo, switch to passwordSchema for production
+    password: passwordSchema,
     name: z.string().min(2, "Name must be at least 2 characters"),
     phone: z.string().optional(),
     country: z.string().min(2, "Country is required"),
