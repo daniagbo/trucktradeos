@@ -7,7 +7,6 @@ import { ListingsProvider } from '@/lib/listings';
 import { RfqsProvider } from '@/lib/rfqs';
 import { SavedSearchesProvider } from '@/lib/saved-searches';
 import FloatingRfqButton from '@/components/rfq/floating-rfq-button';
-import { WebVitals } from '@/components/analytics/web-vitals';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -39,7 +38,6 @@ export default function RootLayout({
                 </div>
                 <Toaster />
                 <FloatingRfqButton />
-                <WebVitals />
               </RfqsProvider>
             </SavedSearchesProvider>
           </ListingsProvider>
