@@ -2,7 +2,7 @@
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
-  provider = "prisma-client-js"
+  provider   = "prisma-client-js"
   engineType = "library"
   previewFeatures = ["postgresqlExtensions"]
 }
@@ -174,6 +174,7 @@ model Spec {
   listingId String
   listing   Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
 
+  @@index([listingId])
   @@map("specs")
 }
 
@@ -204,24 +205,24 @@ model InternalNote {
 }
 
 model RFQ {
-  id              String    @id @default(cuid())
-  status          RFQStatus @default(RECEIVED)
-  category        String?
-  brand           String?
-  requirements    String    @db.Text
-  quantity        Int       @default(1)
-  budget          String?
-  urgency         String?
-  internalOpsNotes String?  @db.Text
-  closeReason     String?
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  id               String    @id @default(cuid())
+  status           RFQStatus @default(RECEIVED)
+  category         String?
+  brand            String?
+  requirements     String    @db.Text
+  quantity         Int       @default(1)
+  budget           String?
+  urgency          String?
+  internalOpsNotes String?   @db.Text
+  closeReason      String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 
   // Relations
   userId    String
-  user      User     @relation(fields: [userId], references: [id])
+  user      User         @relation(fields: [userId], references: [id])
   listingId String?
-  listing   Listing? @relation(fields: [listingId], references: [id])
+  listing   Listing?     @relation(fields: [listingId], references: [id])
   offers    Offer[]
   messages  RFQMessage[]
   events    RFQEvent[]
@@ -259,7 +260,7 @@ model Offer {
 model RFQMessage {
   id         String   @id @default(cuid())
   message    String   @db.Text
-  senderType String   // 'admin' | 'buyer'
+  senderType String // 'admin' | 'buyer'
   createdAt  DateTime @default(now())
 
   rfqId String
@@ -270,7 +271,7 @@ model RFQMessage {
 
 model RFQEvent {
   id        String   @id @default(cuid())
-  type      String   // 'status_change' | 'message' | 'offer_sent' etc.
+  type      String // 'status_change' | 'message' | 'offer_sent' etc.
   payload   Json
   timestamp DateTime @default(now())
 
@@ -282,7 +283,7 @@ model RFQEvent {
 
 model AuditLog {
   id        String   @id @default(cuid())
-  action    String   // "listing.create", "rfq.update"
+  action    String // "listing.create", "rfq.update"
   entityId  String?
   metadata  Json?
   ip        String?
