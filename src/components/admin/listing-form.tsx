@@ -13,11 +13,12 @@ import type { Listing, ListingMedia, Spec, ListingDocument, InternalNote } from 
 import { useListings } from '@/hooks/use-listings';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
-import { FileText, Loader2, PlusCircle, Sparkles, Trash2, X } from 'lucide-react';
+import { FileText, Loader2, PlusCircle, Sparkles, Trash2, X, AlertTriangle } from 'lucide-react';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { enhanceWithAI } from '@/lib/actions';
 import { useState } from 'react';
 import { useAuth } from '@/hooks/use-auth';
+import Image from 'next/image';
 
 const specSchema = z.object({
   key: z.string().min(1, 'Key is required'),
@@ -116,6 +117,40 @@ function EnhanceButton({ getValues, setValue }: { getValues: any, setValue: any 
   );
 }
 
+function MediaCard({ field, index, onRemove }: { field: { id: string, url: string }, index: number, onRemove: (index: number) => void }) {
+  const [hasError, setHasError] = useState(false);
+
+  return (
+    <div className="relative aspect-square group">
+      {hasError ? (
+        <div className="flex flex-col items-center justify-center w-full h-full bg-secondary rounded-md border border-border">
+          <AlertTriangle className="h-8 w-8 text-yellow-500 mb-2" />
+          <span className="text-xs text-muted-foreground text-center font-medium px-2">
+            Image blocked or invalid
+          </span>
+        </div>
+      ) : (
+        <Image
+          src={field.url}
+          alt="listing media"
+          fill
+          className="rounded-md object-cover"
+          sizes="(max-width: 640px) 33vw, (max-width: 768px) 25vw, 20vw"
+          onError={() => setHasError(true)}
+        />
+      )}
+      <Button
+        type="button"
+        variant="destructive"
+        size="icon"
+        className="absolute -top-2 -right-2 h-6 w-6 rounded-full opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity z-10"
+        onClick={() => onRemove(index)}
+      >
+        <X className="h-4 w-4" />
+      </Button>
+    </div>
+  );
+}
 
 export default function ListingForm({ existingListing }: ListingFormProps) {
   const router = useRouter();
@@ -285,10 +320,12 @@ export default function ListingForm({ existingListing }: ListingFormProps) {
 
             <div className="mt-4 grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-4">
               {mediaFields.map((field, index) => (
-                <div key={field.id} className="relative aspect-square">
-                  <img src={field.url} alt="listing media" className="rounded-md object-cover w-full h-full" />
-                  <Button type="button" variant="destructive" size="icon" className="absolute -top-2 -right-2 h-6 w-6 rounded-full" onClick={() => removeMedia(index)}><X className="h-4 w-4" /></Button>
-                </div>
+                <MediaCard
+                  key={field.id}
+                  field={field}
+                  index={index}
+                  onRemove={removeMedia}
+                />
               ))}
             </div>
           </CardContent>
