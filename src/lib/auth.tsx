@@ -122,12 +122,35 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const updateProfile = useCallback(async (updatedData: Partial<User>): Promise<boolean> => {
     if (!user) return false;
 
-    const updatedUser = { ...user, ...updatedData };
-    setUser(updatedUser);
+    // Optimistic update
+    const previousUser = user;
+    const optimisticUser = { ...user, ...updatedData };
+    setUser(optimisticUser);
 
-    // TODO: Implement API call to update profile in DB
-    toast({ title: 'Profile Updated', description: 'Your information has been updated locally.' });
-    return true;
+    try {
+      const res = await fetch('/api/auth/update', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedData),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setUser(previousUser);
+        toast({ variant: 'destructive', title: 'Update Failed', description: data.message || 'Could not update profile.' });
+        return false;
+      }
+
+      setUser(data.user);
+      toast({ title: 'Profile Updated', description: 'Your information has been updated successfully.' });
+      return true;
+
+    } catch (error) {
+      setUser(previousUser);
+      toast({ variant: 'destructive', title: 'Update Failed', description: 'An unexpected error occurred.' });
+      return false;
+    }
   }, [user, toast]);
 
   const value = { user, loading, login, logout, register, updateProfile };
