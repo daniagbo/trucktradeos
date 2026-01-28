@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import type { Listing } from '@/lib/types';
@@ -14,7 +15,11 @@ interface ListingCardProps {
   viewMode?: 'grid' | 'list';
 }
 
-export default function ListingCard({ listing, isMember, viewMode = 'grid' }: ListingCardProps) {
+/**
+ * ⚡ Performance: Memoized to prevent unnecessary re-renders in large lists (ListingBrowser)
+ * and the homepage when unrelated state changes (e.g. filters, scroll state).
+ */
+function ListingCard({ listing, isMember, viewMode = 'grid' }: ListingCardProps) {
   // Use first 3 specs for chips
   const keySpecs = listing.specs?.slice(0, 3) || [];
   const placeholderImage = listing.media?.[0] || { url: 'https://picsum.photos/seed/placeholder/800/600', imageHint: 'placeholder' };
@@ -115,3 +120,5 @@ export default function ListingCard({ listing, isMember, viewMode = 'grid' }: Li
     </Card>
   );
 }
+
+export default memo(ListingCard);
