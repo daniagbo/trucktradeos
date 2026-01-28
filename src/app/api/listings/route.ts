@@ -66,7 +66,13 @@ export async function GET(request: Request) {
         }
 
         if (country) {
-            where.country = { equals: country, mode: 'insensitive' };
+            // Normalize to Title Case to match typical database storage (e.g. "Germany") or Uppercase for codes (e.g. "USA")
+            // This enables index usage via strict equality while handling lowercase input.
+            const normalizedCountry = country.length <= 3
+                ? country.toUpperCase()
+                : country.charAt(0).toUpperCase() + country.slice(1).toLowerCase();
+
+            where.country = normalizedCountry;
         }
 
         if (condition) {
