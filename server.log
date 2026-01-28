@@ -1,0 +1,292 @@
+
+> nextn@0.1.0 dev
+> next dev --turbopack -p 9002
+
+   ▲ Next.js 15.5.9 (Turbopack)
+   - Local:        http://localhost:9002
+   - Network:      http://192.168.0.2:9002
+
+ ✓ Starting...
+ ✓ Compiled middleware in 408ms
+ ✓ Ready in 1977ms
+ ○ Compiling /admin/rfqs ...
+ ✓ Compiled /admin/rfqs in 8.2s
+ GET /admin/rfqs 200 in 9265ms
+ GET /admin/rfqs 200 in 293ms
+ ○ Compiling /api/listings ...
+ GET /admin/rfqs 200 in 197ms
+ ✓ Compiled /api/listings in 1148ms
+ GET /api/auth/me 200 in 1590ms
+prisma:error
+Invalid `__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["db"].listing.findMany()` invocation in
+/app/.next/server/chunks/[root-of-the-server]__928724f9._.js:139:142
+
+  136 }
+  137 // Execute Query
+  138 const [listings, total] = await Promise.all([
+→ 139     __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["db"].listing.findMany(
+error: Environment variable not found: DATABASE_URL.
+  -->  schema.prisma:11
+   |
+10 |   provider = "postgresql"
+11 |   url      = env("DATABASE_URL")
+   |
+
+Validation Error Count: 1
+prisma:error
+Invalid `__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["db"].listing.count()` invocation in
+/app/.next/server/chunks/[root-of-the-server]__928724f9._.js:156:142
+
+  153         specs: true
+  154     }
+  155 }),
+→ 156 __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["db"].listing.count(
+error: Environment variable not found: DATABASE_URL.
+  -->  schema.prisma:11
+   |
+10 |   provider = "postgresql"
+11 |   url      = env("DATABASE_URL")
+   |
+
+Validation Error Count: 1
+Failed to fetch listings: Error [PrismaClientInitializationError]:
+Invalid `__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["db"].listing.findMany()` invocation in
+/app/.next/server/chunks/[root-of-the-server]__928724f9._.js:139:142
+
+  136 }
+  137 // Execute Query
+  138 const [listings, total] = await Promise.all([
+→ 139     __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["db"].listing.findMany(
+error: Environment variable not found: DATABASE_URL.
+  -->  schema.prisma:11
+   |
+10 |   provider = "postgresql"
+11 |   url      = env("DATABASE_URL")
+   |
+
+Validation Error Count: 1
+    at <unknown> (src/app/api/listings/route.ts:63:24)
+    at <unknown> (-->  schema.prisma:11)
+    at async GET (src/app/api/listings/route.ts:62:35)
+  61 |         // Execute Query
+  62 |         const [listings, total] = await Promise.all([
+> 63 |             db.listing.findMany({
+     |                        ^
+  64 |                 where,
+  65 |                 skip,
+  66 |                 take: limit, {
+  clientVersion: '5.19.1',
+  errorCode: undefined
+}
+ GET /api/listings?limit=100 500 in 1863ms
+ GET /admin/rfqs 200 in 204ms
+ GET /admin/rfqs 200 in 189ms
+prisma:error
+Invalid `__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["db"].listing.findMany()` invocation in
+/app/.next/server/chunks/[root-of-the-server]__928724f9._.js:139:142
+
+  136 }
+  137 // Execute Query
+  138 const [listings, total] = await Promise.all([
+→ 139     __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["db"].listing.findMany(
+error: Environment variable not found: DATABASE_URL.
+  -->  schema.prisma:11
+   |
+10 |   provider = "postgresql"
+11 |   url      = env("DATABASE_URL")
+   |
+
+Validation Error Count: 1
+prisma:error
+Invalid `__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["db"].listing.count()` invocation in
+/app/.next/server/chunks/[root-of-the-server]__928724f9._.js:156:142
+
+  153         specs: true
+  154     }
+  155 }),
+→ 156 __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["db"].listing.count(
+error: Environment variable not found: DATABASE_URL.
+  -->  schema.prisma:11
+   |
+10 |   provider = "postgresql"
+11 |   url      = env("DATABASE_URL")
+   |
+
+Validation Error Count: 1
+Failed to fetch listings: Error [PrismaClientInitializationError]:
+Invalid `__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["db"].listing.findMany()` invocation in
+/app/.next/server/chunks/[root-of-the-server]__928724f9._.js:139:142
+
+  136 }
+  137 // Execute Query
+  138 const [listings, total] = await Promise.all([
+→ 139     __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["db"].listing.findMany(
+error: Environment variable not found: DATABASE_URL.
+  -->  schema.prisma:11
+   |
+10 |   provider = "postgresql"
+11 |   url      = env("DATABASE_URL")
+   |
+
+Validation Error Count: 1
+    at <unknown> (src/app/api/listings/route.ts:63:24)
+    at <unknown> (-->  schema.prisma:11)
+    at async GET (src/app/api/listings/route.ts:62:35)
+  61 |         // Execute Query
+  62 |         const [listings, total] = await Promise.all([
+> 63 |             db.listing.findMany({
+     |                        ^
+  64 |                 where,
+  65 |                 skip,
+  66 |                 take: limit, {
+  clientVersion: '5.19.1',
+  errorCode: undefined
+}
+ GET /api/listings?limit=100 500 in 604ms
+ GET /api/auth/me 200 in 608ms
+ GET /admin/rfqs 200 in 371ms
+ GET /admin/rfqs?status=Received%2CIn+progress%2COffer+sent 200 in 116ms
+ GET /admin/rfqs?status=Received%2CIn+progress%2COffer+sent 200 in 109ms
+ GET /admin/rfqs 200 in 285ms
+ GET /admin/rfqs 200 in 137ms
+prisma:error
+Invalid `__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["db"].listing.findMany()` invocation in
+/app/.next/server/chunks/[root-of-the-server]__928724f9._.js:139:142
+
+  136 }
+  137 // Execute Query
+  138 const [listings, total] = await Promise.all([
+→ 139     __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["db"].listing.findMany(
+error: Environment variable not found: DATABASE_URL.
+  -->  schema.prisma:11
+   |
+10 |   provider = "postgresql"
+11 |   url      = env("DATABASE_URL")
+   |
+
+Validation Error Count: 1
+prisma:error
+Invalid `__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["db"].listing.count()` invocation in
+/app/.next/server/chunks/[root-of-the-server]__928724f9._.js:156:142
+
+  153         specs: true
+  154     }
+  155 }),
+→ 156 __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["db"].listing.count(
+error: Environment variable not found: DATABASE_URL.
+  -->  schema.prisma:11
+   |
+10 |   provider = "postgresql"
+11 |   url      = env("DATABASE_URL")
+   |
+
+Validation Error Count: 1
+Failed to fetch listings: Error [PrismaClientInitializationError]:
+Invalid `__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["db"].listing.findMany()` invocation in
+/app/.next/server/chunks/[root-of-the-server]__928724f9._.js:139:142
+
+  136 }
+  137 // Execute Query
+  138 const [listings, total] = await Promise.all([
+→ 139     __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["db"].listing.findMany(
+error: Environment variable not found: DATABASE_URL.
+  -->  schema.prisma:11
+   |
+10 |   provider = "postgresql"
+11 |   url      = env("DATABASE_URL")
+   |
+
+Validation Error Count: 1
+    at <unknown> (src/app/api/listings/route.ts:63:24)
+    at <unknown> (-->  schema.prisma:11)
+    at async GET (src/app/api/listings/route.ts:62:35)
+  61 |         // Execute Query
+  62 |         const [listings, total] = await Promise.all([
+> 63 |             db.listing.findMany({
+     |                        ^
+  64 |                 where,
+  65 |                 skip,
+  66 |                 take: limit, {
+  clientVersion: '5.19.1',
+  errorCode: undefined
+}
+ GET /api/listings?limit=100 500 in 552ms
+ GET /api/auth/me 200 in 554ms
+ GET /admin/rfqs 200 in 296ms
+ GET /admin/rfqs?status=Received%2CIn+progress%2COffer+sent 200 in 117ms
+ GET /admin/rfqs?status=Received%2CIn+progress%2COffer+sent 200 in 121ms
+ GET /admin/rfqs 200 in 242ms
+ GET /api/auth/me 200 in 331ms
+prisma:error
+Invalid `__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["db"].listing.findMany()` invocation in
+/app/.next/server/chunks/[root-of-the-server]__928724f9._.js:139:142
+
+  136 }
+  137 // Execute Query
+  138 const [listings, total] = await Promise.all([
+→ 139     __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["db"].listing.findMany(
+error: Environment variable not found: DATABASE_URL.
+  -->  schema.prisma:11
+   |
+10 |   provider = "postgresql"
+11 |   url      = env("DATABASE_URL")
+   |
+
+Validation Error Count: 1
+prisma:error
+Invalid `__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["db"].listing.count()` invocation in
+/app/.next/server/chunks/[root-of-the-server]__928724f9._.js:156:142
+
+  153         specs: true
+  154     }
+  155 }),
+→ 156 __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["db"].listing.count(
+error: Environment variable not found: DATABASE_URL.
+  -->  schema.prisma:11
+   |
+10 |   provider = "postgresql"
+11 |   url      = env("DATABASE_URL")
+   |
+
+Validation Error Count: 1
+Failed to fetch listings: Error [PrismaClientInitializationError]:
+Invalid `__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["db"].listing.findMany()` invocation in
+/app/.next/server/chunks/[root-of-the-server]__928724f9._.js:139:142
+
+  136 }
+  137 // Execute Query
+  138 const [listings, total] = await Promise.all([
+→ 139     __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$db$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["db"].listing.findMany(
+error: Environment variable not found: DATABASE_URL.
+  -->  schema.prisma:11
+   |
+10 |   provider = "postgresql"
+11 |   url      = env("DATABASE_URL")
+   |
+
+Validation Error Count: 1
+    at <unknown> (src/app/api/listings/route.ts:63:24)
+    at <unknown> (-->  schema.prisma:11)
+    at async GET (src/app/api/listings/route.ts:62:35)
+  61 |         // Execute Query
+  62 |         const [listings, total] = await Promise.all([
+> 63 |             db.listing.findMany({
+     |                        ^
+  64 |                 where,
+  65 |                 skip,
+  66 |                 take: limit, {
+  clientVersion: '5.19.1',
+  errorCode: undefined
+}
+ GET /api/listings?limit=100 500 in 532ms
+ GET /admin/rfqs 200 in 395ms
+ GET /admin/rfqs 200 in 350ms
+ GET /admin/rfqs?status=Received%2CIn+progress%2COffer+sent 200 in 115ms
+ GET /admin/rfqs?status=Received%2CIn+progress%2COffer+sent 200 in 120ms
+ GET /admin/rfqs?status=In+progress%2COffer+sent 200 in 100ms
+ GET /admin/rfqs?status=In+progress%2COffer+sent 200 in 120ms
+ GET /admin/rfqs?status=Offer+sent 200 in 107ms
+ GET /admin/rfqs?status=Offer+sent 200 in 111ms
+ ✓ Compiled middleware in 5ms
+ ✓ Compiled in 140ms
+ ✓ Compiled in 304ms
