@@ -35,7 +35,22 @@ export async function GET(request: Request) {
         }
 
         if (brand) {
-            where.brand = { contains: brand, mode: 'insensitive' };
+            // Only apply brand filter if length is sufficient for trigram index usage
+            if (brand.length >= 3) {
+                where.brand = { contains: brand, mode: 'insensitive' };
+            } else {
+                // Return empty result if search term is too short
+                // Using an impossible condition to return 0 results
+                return NextResponse.json({
+                    listings: [],
+                    pagination: {
+                        total: 0,
+                        page,
+                        limit,
+                        totalPages: 0,
+                    },
+                });
+            }
         }
 
         if (minPrice || maxPrice) {

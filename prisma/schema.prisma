@@ -4,11 +4,13 @@
 generator client {
   provider = "prisma-client-js"
   engineType = "library"
+  previewFeatures = ["postgresqlExtensions"]
 }
 
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+  extensions = [pg_trgm]
 }
 
 // ============================================================================
@@ -146,6 +148,7 @@ model Listing {
   rfqs          RFQ[]
 
   @@index([category])
+  @@index([brand(ops: raw("gin_trgm_ops"))], type: Gin)
   @@index([country])
   @@index([createdAt])
   @@map("listings")
