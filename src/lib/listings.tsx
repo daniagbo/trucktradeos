@@ -2,6 +2,7 @@
 
 import { createContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import type { Listing } from './types';
+import { normalizeListing, toListingDbPayload } from './normalizers';
 
 interface ListingsContextType {
   listings: Listing[];
@@ -36,7 +37,7 @@ export const ListingsProvider = ({ children }: { children: ReactNode }) => {
       const res = await fetch('/api/listings?limit=100');
       if (res.ok) {
         const data = await res.json();
-        setListings(data.listings);
+        setListings((data.listings || []).map(normalizeListing));
       }
     } catch (error) {
       console.error('Failed to fetch listings:', error);
@@ -58,7 +59,7 @@ export const ListingsProvider = ({ children }: { children: ReactNode }) => {
       const res = await fetch('/api/admin/listings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(listingData),
+        body: JSON.stringify(toListingDbPayload(listingData)),
       });
 
       if (res.ok) {
@@ -77,7 +78,7 @@ export const ListingsProvider = ({ children }: { children: ReactNode }) => {
       const res = await fetch(`/api/admin/listings/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updatedData),
+        body: JSON.stringify(toListingDbPayload(updatedData)),
       });
 
       if (res.ok) {

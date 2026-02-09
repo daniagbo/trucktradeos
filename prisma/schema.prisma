@@ -10,6 +10,8 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+  // Recommended: set DATABASE_URL to a pooled URL (for runtime) and DIRECT_URL to a direct URL (for migrations).
+  directUrl  = env("DIRECT_URL")
   extensions = [pg_trgm]
 }
 
@@ -20,6 +22,13 @@ datasource db {
 enum Role {
   ADMIN
   MEMBER
+}
+
+enum TeamRole {
+  REQUESTER
+  APPROVER
+  MANAGER
+  OWNER
 }
 
 enum AccountType {
@@ -73,6 +82,23 @@ enum RFQStatus {
   LOST
 }
 
+enum ServiceTier {
+  STANDARD
+  PRIORITY
+  ENTERPRISE
+}
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum ApprovalDecisionStatus {
+  APPROVED
+  REJECTED
+}
+
 enum OfferStatus {
   DRAFT
   SENT
@@ -88,31 +114,133 @@ enum DocumentType {
   MAINTENANCE
 }
 
+enum SavedViewScope {
+  LISTINGS
+  RFQS
+}
+
+enum NotificationType {
+  SYSTEM
+  RFQ
+  OFFER
+  SLA
+}
+
+enum WatchlistEntityType {
+  LISTING
+  RFQ
+}
+
+enum TeamInviteStatus {
+  SENT
+  ACCEPTED
+  REVOKED
+  EXPIRED
+}
+
+enum AutomationTriggerType {
+  SLA_ESCALATION
+}
+
+enum AutomationActionType {
+  NOTIFY_ADMIN
+}
+
+enum DeliverableType {
+  SOURCING_BRIEF
+  SUPPLIER_SHORTLIST
+  NEGOTIATION_NOTE
+  CLOSE_MEMO
+  BENCHMARK_REPORT
+  SUPPLIER_COMPARISON
+}
+
+enum DeliverableStatus {
+  TODO
+  IN_PROGRESS
+  DONE
+  BLOCKED
+}
+
+enum OpsTaskStatus {
+  OPEN
+  ACKNOWLEDGED
+  RESOLVED
+}
+
+enum OpsTaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
 // ============================================================================
 // MODELS
 // ============================================================================
 
 model User {
-  id           String      @id @default(cuid())
-  email        String      @unique
-  passwordHash String
-  role         Role        @default(MEMBER)
-  accountType  AccountType @default(INDIVIDUAL)
-  name         String
-  phone        String?
-  country      String
-  companyName  String?
-  vat          String?
-  createdAt    DateTime    @default(now())
-  updatedAt    DateTime    @updatedAt
+  id                 String      @id @default(cuid())
+  email              String      @unique
+  passwordHash       String
+  mustChangePassword Boolean     @default(false)
+  role               Role        @default(MEMBER)
+  teamRole           TeamRole    @default(REQUESTER)
+  accountType        AccountType @default(INDIVIDUAL)
+  name               String
+  phone              String?
+  country            String
+  companyName        String?
+  vat                String?
+  headline           String?
+  bio                String?     @db.Text
+  website            String?
+  linkedinUrl        String?
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
 
   // Relations
-  listings      Listing[]
-  rfqs          RFQ[]
-  internalNotes InternalNote[]
-  auditLogs     AuditLog[]
+  organizationId          String?
+  organization            Organization?      @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  listings                Listing[]
+  rfqs                    RFQ[]
+  internalNotes           InternalNote[]
+  auditLogs               AuditLog[]
+  savedViews              SavedView[]
+  notifications           Notification[]
+  offerTemplates          OfferTemplate[]
+  watchlistItems          WatchlistItem[]
+  approvalsRequested      ApprovalRequest[]  @relation("ApprovalRequester")
+  approvalsAssigned       ApprovalRequest[]  @relation("ApprovalAssignee")
+  approvalDecisions       ApprovalDecision[]
+  createdApprovalPolicies ApprovalPolicy[]   @relation("ApprovalPolicyCreatedBy")
+  createdInvites          TeamInvite[]       @relation("InviteCreator")
+  acceptedInvites         TeamInvite[]       @relation("InviteAcceptor")
+  createdAutomationRules  AutomationRule[]   @relation("AutomationRuleCreatedBy")
+  assignedOpsTasks        OpsTask[]
+  TeamInvite              TeamInvite[]
 
+  @@index([organizationId, role])
+  @@index([organizationId, teamRole])
   @@map("users")
+}
+
+model Organization {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users            User[]
+  approvalPolicies ApprovalPolicy[]
+  approvalRequests ApprovalRequest[]
+  invites          TeamInvite[]
+  automationRules  AutomationRule[]
+  opsTasks         OpsTask[]
+  automationRuns   AutomationRunLog[]
+
+  @@map("organizations")
 }
 
 model Listing {
@@ -205,31 +333,112 @@ model InternalNote {
 }
 
 model RFQ {
-  id               String    @id @default(cuid())
-  status           RFQStatus @default(RECEIVED)
+  id               String      @id @default(cuid())
+  status           RFQStatus   @default(RECEIVED)
+  serviceTier      ServiceTier @default(STANDARD)
+  slaTargetHours   Int         @default(72)
   category         String?
   brand            String?
-  requirements     String    @db.Text
-  quantity         Int       @default(1)
+  requirements     String      @db.Text
+  quantity         Int         @default(1)
   budget           String?
   urgency          String?
-  internalOpsNotes String?   @db.Text
+  internalOpsNotes String?     @db.Text
   closeReason      String?
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
 
   // Relations
-  userId    String
-  user      User         @relation(fields: [userId], references: [id])
-  listingId String?
-  listing   Listing?     @relation(fields: [listingId], references: [id])
-  offers    Offer[]
-  messages  RFQMessage[]
-  events    RFQEvent[]
+  userId       String
+  user         User              @relation(fields: [userId], references: [id])
+  listingId    String?
+  listing      Listing?          @relation(fields: [listingId], references: [id])
+  offers       Offer[]
+  messages     RFQMessage[]
+  events       RFQEvent[]
+  approvals    ApprovalRequest[]
+  deliverables Deliverable[]
+  opsTasks     OpsTask[]
 
   @@index([status])
   @@index([createdAt])
   @@map("rfqs")
+}
+
+model ApprovalRequest {
+  id                String         @id @default(cuid())
+  status            ApprovalStatus @default(PENDING)
+  requiredApprovals Int            @default(1)
+  note              String?        @db.Text
+  decisionNote      String?        @db.Text
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  decidedAt         DateTime?
+
+  rfqId String
+  rfq   RFQ    @relation(fields: [rfqId], references: [id], onDelete: Cascade)
+
+  requesterId String
+  requester   User   @relation("ApprovalRequester", fields: [requesterId], references: [id])
+
+  approverId           String?
+  approver             User?              @relation("ApprovalAssignee", fields: [approverId], references: [id])
+  decisions            ApprovalDecision[]
+  candidateApproverIds Json?
+
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+
+  policyId String?
+  policy   ApprovalPolicy? @relation(fields: [policyId], references: [id], onDelete: SetNull)
+
+  @@index([rfqId, status, createdAt])
+  @@index([approverId, status, createdAt])
+  @@index([organizationId, status, createdAt])
+  @@map("approval_requests")
+}
+
+model ApprovalPolicy {
+  id                     String      @id @default(cuid())
+  serviceTier            ServiceTier
+  requiredApprovals      Int         @default(1)
+  approverTeamRole       TeamRole    @default(APPROVER)
+  autoAssignEnabled      Boolean     @default(true)
+  warningThresholdRatio  Float       @default(1.0)
+  criticalThresholdRatio Float       @default(1.5)
+  active                 Boolean     @default(true)
+  createdAt              DateTime    @default(now())
+  updatedAt              DateTime    @updatedAt
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  createdById String?
+  createdBy   User?   @relation("ApprovalPolicyCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+
+  approvalRequests ApprovalRequest[]
+
+  @@unique([organizationId, serviceTier])
+  @@index([organizationId, active, serviceTier])
+  @@map("approval_policies")
+}
+
+model ApprovalDecision {
+  id        String                 @id @default(cuid())
+  status    ApprovalDecisionStatus
+  note      String?                @db.Text
+  createdAt DateTime               @default(now())
+  updatedAt DateTime               @updatedAt
+
+  approvalRequestId String
+  approvalRequest   ApprovalRequest @relation(fields: [approvalRequestId], references: [id], onDelete: Cascade)
+
+  approverId String
+  approver   User   @relation(fields: [approverId], references: [id], onDelete: Cascade)
+
+  @@unique([approvalRequestId, approverId])
+  @@index([approvalRequestId, status, createdAt])
+  @@map("approval_decisions")
 }
 
 model Offer {
@@ -255,6 +464,28 @@ model Offer {
   listingId String?
 
   @@map("offers")
+}
+
+model OfferTemplate {
+  id               String   @id @default(cuid())
+  name             String
+  category         String?
+  title            String
+  currency         String   @default("USD")
+  terms            String?
+  location         String?
+  availabilityText String?
+  includedFlags    Json     @default("{}")
+  notes            String?  @db.Text
+  isDefault        Boolean  @default(false)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, category, createdAt])
+  @@map("offer_templates")
 }
 
 model RFQMessage {
@@ -296,4 +527,169 @@ model AuditLog {
   @@index([action])
   @@index([createdAt])
   @@map("audit_logs")
+}
+
+model SavedView {
+  id        String         @id @default(cuid())
+  name      String
+  scope     SavedViewScope
+  state     Json
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, scope, createdAt])
+  @@map("saved_views")
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  type      NotificationType @default(SYSTEM)
+  title     String
+  message   String
+  read      Boolean          @default(false)
+  metadata  Json?
+  dedupeKey String?          @unique
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, read, createdAt])
+  @@map("notifications")
+}
+
+model WatchlistItem {
+  id         String              @id @default(cuid())
+  entityType WatchlistEntityType
+  entityId   String
+  pinnedAt   DateTime            @default(now())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, entityType, entityId])
+  @@index([userId, entityType, pinnedAt])
+  @@map("watchlist_items")
+}
+
+model Deliverable {
+  id          String            @id @default(cuid())
+  type        DeliverableType
+  status      DeliverableStatus @default(TODO)
+  title       String
+  summary     String?           @db.Text
+  dueAt       DateTime?
+  completedAt DateTime?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  rfqId String
+  rfq   RFQ    @relation(fields: [rfqId], references: [id], onDelete: Cascade)
+
+  @@index([rfqId, status, createdAt])
+  @@map("deliverables")
+}
+
+model OpsTask {
+  id         String          @id @default(cuid())
+  title      String
+  details    String?         @db.Text
+  status     OpsTaskStatus   @default(OPEN)
+  priority   OpsTaskPriority @default(MEDIUM)
+  source     String
+  dueAt      DateTime?
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
+  resolvedAt DateTime?
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  rfqId String?
+  rfq   RFQ?    @relation(fields: [rfqId], references: [id], onDelete: SetNull)
+
+  assigneeId String?
+  assignee   User?   @relation(fields: [assigneeId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, status, priority, createdAt])
+  @@index([rfqId, status, createdAt])
+  @@map("ops_tasks")
+}
+
+model TeamInvite {
+  id                   String           @id @default(cuid())
+  email                String
+  name                 String
+  teamRole             TeamRole         @default(REQUESTER)
+  status               TeamInviteStatus @default(SENT)
+  token                String           @unique
+  tempPasswordIssuedAt DateTime?
+  acceptedAt           DateTime?
+  revokedAt            DateTime?
+  expiresAt            DateTime?
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  invitedUserId String?
+  invitedUser   User?   @relation(fields: [invitedUserId], references: [id], onDelete: SetNull)
+
+  createdById String
+  createdBy   User   @relation("InviteCreator", fields: [createdById], references: [id], onDelete: Cascade)
+
+  acceptedById String?
+  acceptedBy   User?   @relation("InviteAcceptor", fields: [acceptedById], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, status, createdAt])
+  @@index([email, organizationId, createdAt])
+  @@map("team_invites")
+}
+
+model AutomationRule {
+  id           String                @id @default(cuid())
+  name         String
+  triggerType  AutomationTriggerType
+  actionType   AutomationActionType
+  condition    Json                  @default("{}")
+  actionConfig Json                  @default("{}")
+  active       Boolean               @default(true)
+  createdAt    DateTime              @default(now())
+  updatedAt    DateTime              @updatedAt
+  lastRunAt    DateTime?
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  createdById String?
+  createdBy   User?   @relation("AutomationRuleCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, triggerType, active])
+  @@map("automation_rules")
+}
+
+model AutomationRunLog {
+  id            String   @id @default(cuid())
+  triggerType   String
+  source        String
+  status        String
+  notifications Int      @default(0)
+  tasksCreated  Int      @default(0)
+  retries       Int      @default(0)
+  dedupedCount  Int      @default(0)
+  errorMessage  String?  @db.Text
+  metadata      Json?
+  createdAt     DateTime @default(now())
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, createdAt])
+  @@index([organizationId, triggerType, createdAt])
+  @@map("automation_run_logs")
 }

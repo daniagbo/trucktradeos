@@ -24,16 +24,16 @@ export default function RootLayout({
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=Manrope:wght@300;400;500;600;700;800&family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
       </head>
       <body className="font-body antialiased" suppressHydrationWarning>
         <AuthProvider>
           <ListingsProvider>
             <SavedSearchesProvider>
               <RfqsProvider>
-                <div className="flex min-h-screen flex-col">
+                <div className="flex min-h-screen flex-col bg-background">
                   <Header />
-                  <main className="flex-grow">{children}</main>
+                  <main className="flex-grow pt-20 md:pt-24">{children}</main>
                   <Footer />
                 </div>
                 <Toaster />

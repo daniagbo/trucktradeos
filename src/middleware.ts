@@ -11,19 +11,33 @@ export async function middleware(request: NextRequest) {
 
     const { pathname } = request.nextUrl;
 
+    const isUserProtected =
+        pathname.startsWith('/dashboard') ||
+        pathname === '/profile' ||
+        pathname === '/rfq/new';
+
     if (pathname.startsWith('/admin')) {
         const cookie = request.cookies.get('auth_session')?.value;
         const session = await decrypt(cookie);
 
         if (!session?.userId) {
             const url = new URL('/login', request.url);
-            url.searchParams.set('next', pathname);
+            url.searchParams.set('next', pathname + request.nextUrl.search);
             return NextResponse.redirect(url);
         }
 
-        if (session.role !== 'admin') {
+        if (session.role !== 'admin' && session.role !== 'ADMIN') {
             // Stealth mode: Redirect to 404/Home or clean 404 rewrite
             return NextResponse.rewrite(new URL('/404', request.url));
+        }
+    } else if (isUserProtected) {
+        const cookie = request.cookies.get('auth_session')?.value;
+        const session = await decrypt(cookie);
+
+        if (!session?.userId) {
+            const url = new URL('/login', request.url);
+            url.searchParams.set('next', pathname + request.nextUrl.search);
+            return NextResponse.redirect(url);
         }
     }
 
@@ -31,5 +45,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-    matcher: '/admin/:path*',
+    matcher: ['/admin/:path*', '/dashboard/:path*', '/profile', '/rfq/new'],
 };

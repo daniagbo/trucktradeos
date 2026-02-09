@@ -15,6 +15,35 @@ type SessionPayload = {
     expiresAt: Date
 }
 
+export function getSessionCookieOptions(expiresAt: Date) {
+    return {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax' as const,
+        path: '/',
+        expires: expiresAt,
+    }
+}
+
+export async function createSessionToken(userId: string, role: string) {
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+    const token = await encrypt({ userId, role, expiresAt })
+    return { token, expiresAt }
+}
+
+function parseCookieHeader(header: string | null) {
+    if (!header) return new Map<string, string>()
+    const map = new Map<string, string>()
+    for (const part of header.split(';')) {
+        const [rawKey, ...rawValParts] = part.trim().split('=')
+        if (!rawKey) continue
+        const rawVal = rawValParts.join('=')
+        if (!rawVal) continue
+        map.set(rawKey, decodeURIComponent(rawVal))
+    }
+    return map
+}
+
 export async function encrypt(payload: SessionPayload) {
     return new SignJWT(payload)
         .setProtectedHeader({ alg: 'HS256' })
@@ -35,17 +64,10 @@ export async function decrypt(session: string | undefined = '') {
 }
 
 export async function createSession(userId: string, role: string) {
-    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
-    const session = await encrypt({ userId, role, expiresAt })
+    const { token, expiresAt } = await createSessionToken(userId, role)
 
     const cookieStore = await cookies()
-    cookieStore.set('auth_session', session, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production', // Consistent secure flag
-        sameSite: 'lax', // Better for UX (navigation from external sites)
-        path: '/',
-        expires: expiresAt,
-    })
+    cookieStore.set('auth_session', token, getSessionCookieOptions(expiresAt))
 }
 
 export async function deleteSession() {
@@ -62,5 +84,15 @@ export async function verifySession() {
         return null
     }
 
+    return { isAuth: true, userId: session.userId, role: session.role }
+}
+
+// Helper for route handlers/tests where `next/headers` cookies() is not available.
+export async function verifySessionFromRequest(request: Request) {
+    const cookieHeader = request.headers.get('cookie')
+    const cookiesMap = parseCookieHeader(cookieHeader)
+    const token = cookiesMap.get('auth_session')
+    const session = await decrypt(token)
+    if (!session?.userId) return null
     return { isAuth: true, userId: session.userId, role: session.role }
 }

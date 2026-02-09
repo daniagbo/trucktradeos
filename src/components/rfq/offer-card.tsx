@@ -16,10 +16,10 @@ interface OfferCardProps {
 }
 
 const offerStatusColors = {
-    Sent: 'border-blue-500/50 bg-blue-50 text-blue-700',
-    Accepted: 'border-green-500/50 bg-green-50 text-green-700',
-    Declined: 'border-red-500/50 bg-red-50 text-red-700',
-    Expired: 'border-gray-500/50 bg-gray-50 text-gray-700',
+    Sent: 'border-blue-200 bg-blue-50 text-blue-700',
+    Accepted: 'border-green-200 bg-green-50 text-green-700',
+    Declined: 'border-red-200 bg-red-50 text-red-700',
+    Expired: 'border-gray-200 bg-gray-50 text-gray-700',
     Draft: '',
 };
 
@@ -35,10 +35,10 @@ export default function OfferCard({ offer, hasActiveOffer }: OfferCardProps) {
     };
 
     return (
-        <Card className={offer.status === 'Accepted' ? 'border-primary' : ''}>
+        <Card className={`rounded-2xl border-gray-100 dark:border-gray-800 ${offer.status === 'Accepted' ? 'border-primary' : ''}`}>
             <CardHeader>
                 <div className="flex justify-between items-start">
-                    <CardTitle>{offer.title} <span className="text-sm font-normal text-muted-foreground">(v{offer.versionNumber})</span></CardTitle>
+                    <CardTitle className="text-[#111318] dark:text-white">{offer.title} <span className="text-sm font-normal text-muted-foreground">(v{offer.versionNumber})</span></CardTitle>
                     <Badge variant="outline" className={offerStatusColors[offer.status]}>{offer.status}</Badge>
                 </div>
                 <CardDescription>Sent on {format(new Date(offer.sentAt!), "PPP")}</CardDescription>
@@ -67,7 +67,7 @@ export default function OfferCard({ offer, hasActiveOffer }: OfferCardProps) {
                 <CardFooter className="flex gap-2">
                     <AlertDialog>
                         <AlertDialogTrigger asChild>
-                            <Button className="w-full"><Check className="mr-2 h-4 w-4" /> Accept Offer</Button>
+                            <Button className="w-full rounded-xl"><Check className="mr-2 h-4 w-4" /> Accept Offer</Button>
                         </AlertDialogTrigger>
                         <AlertDialogContent>
                             <AlertDialogHeader>
@@ -84,7 +84,7 @@ export default function OfferCard({ offer, hasActiveOffer }: OfferCardProps) {
                     </AlertDialog>
                     <AlertDialog open={isDeclineDialogOpen} onOpenChange={setIsDeclineDialogOpen}>
                         <AlertDialogTrigger asChild>
-                            <Button variant="outline" className="w-full"><ThumbsDown className="mr-2 h-4 w-4" /> Decline</Button>
+                            <Button variant="outline" className="w-full rounded-xl"><ThumbsDown className="mr-2 h-4 w-4" /> Decline</Button>
                         </AlertDialogTrigger>
                         <AlertDialogContent>
                             <AlertDialogHeader>

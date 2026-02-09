@@ -1,8 +1,9 @@
-import { createSession } from '@/lib/session'
+import { createSessionToken, getSessionCookieOptions } from '@/lib/session'
 import { NextResponse } from 'next/server'
 import { loginSchema } from '@/lib/auth/validation'
 import { verifyPassword } from '@/lib/auth/password'
 import { db } from '@/lib/db'
+import { apiError, apiValidationError } from '@/lib/api/errors'
 
 export async function POST(request: Request) {
     try {
@@ -11,10 +12,7 @@ export async function POST(request: Request) {
         // Validate input with Zod
         const validationResult = loginSchema.safeParse(body)
         if (!validationResult.success) {
-            return NextResponse.json(
-                { message: 'Invalid input', errors: validationResult.error.flatten().fieldErrors },
-                { status: 400 }
-            )
+            return apiValidationError(validationResult.error)
         }
 
         const { email, password } = validationResult.data
@@ -26,25 +24,27 @@ export async function POST(request: Request) {
 
         if (!user) {
             // Return generic error to prevent email enumeration
-            return NextResponse.json({ message: 'Invalid credentials' }, { status: 401 })
+            return apiError(401, 'Invalid credentials')
         }
 
         // Verify password with bcrypt
         const isValidPassword = await verifyPassword(password, user.passwordHash)
 
         if (!isValidPassword) {
-            return NextResponse.json({ message: 'Invalid credentials' }, { status: 401 })
+            return apiError(401, 'Invalid credentials')
         }
 
-        // Create secure session
-        await createSession(user.id, user.role)
+        // Create secure session (route-handler safe: sets cookie on response).
+        const { token, expiresAt } = await createSessionToken(user.id, user.role)
 
         // Return user data (exclude sensitive fields)
         const { passwordHash, ...safeUser } = user
 
-        return NextResponse.json({ success: true, user: safeUser })
+        const response = NextResponse.json({ success: true, user: safeUser })
+        response.cookies.set('auth_session', token, getSessionCookieOptions(expiresAt))
+        return response
     } catch (error) {
         console.error('Login error:', error)
-        return NextResponse.json({ message: 'Login failed' }, { status: 500 })
+        return apiError(500, 'Login failed')
     }
 }

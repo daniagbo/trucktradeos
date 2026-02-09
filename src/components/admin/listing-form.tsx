@@ -12,13 +12,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import type { Listing, ListingMedia, Spec, ListingDocument, InternalNote } from '@/lib/types';
 import { useListings } from '@/hooks/use-listings';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
-import { FileText, Loader2, PlusCircle, Sparkles, Trash2, X, AlertTriangle } from 'lucide-react';
+import { AlertTriangle, FileText, Loader2, PlusCircle, Sparkles, Trash2, X } from 'lucide-react';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { enhanceWithAI } from '@/lib/actions';
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '@/hooks/use-auth';
-import Image from 'next/image';
 
 const specSchema = z.object({
   key: z.string().min(1, 'Key is required'),
@@ -77,6 +77,24 @@ type ListingFormValues = z.infer<typeof formSchema>;
 interface ListingFormProps {
   existingListing?: Listing;
 }
+
+type DuplicateCandidate = {
+  id: string;
+  title: string;
+  brand: string;
+  model: string | null;
+  year: number | null;
+  category: string;
+  country: string;
+  city: string | null;
+  score: number;
+};
+
+const CATEGORY_TO_DB: Record<Listing['category'], string> = {
+  Truck: 'TRUCK',
+  Trailer: 'TRAILER',
+  'Heavy Equipment': 'HEAVY_EQUIPMENT',
+};
 
 function EnhanceButton({ getValues, setValue }: { getValues: any, setValue: any }) {
   const [pending, setPending] = useState(false);
@@ -158,6 +176,8 @@ export default function ListingForm({ existingListing }: ListingFormProps) {
   const { addListing, updateListing } = useListings();
   const { toast } = useToast();
   const [newNote, setNewNote] = useState('');
+  const [duplicateCandidates, setDuplicateCandidates] = useState<DuplicateCandidate[]>([]);
+  const [checkingDuplicates, setCheckingDuplicates] = useState(false);
 
   const form = useForm<ListingFormValues>({
     resolver: zodResolver(formSchema),
@@ -204,14 +224,85 @@ export default function ListingForm({ existingListing }: ListingFormProps) {
     name: 'internalNotes',
   });
 
-  async function onSubmit(data: ListingFormValues) {
-    if (existingListing) {
-      updateListing(existingListing.id, data);
-      toast({ title: 'Success', description: 'Listing updated successfully.' });
-    } else {
-      addListing(data);
-      toast({ title: 'Success', description: 'Listing created successfully.' });
+  const watchedTitle = form.watch('title');
+  const watchedBrand = form.watch('brand');
+  const watchedModel = form.watch('model');
+  const watchedCategory = form.watch('category');
+  const watchedYear = form.watch('year');
+
+  const duplicateQuery = useMemo(() => {
+    const title = watchedTitle?.trim() || '';
+    const brand = watchedBrand?.trim() || '';
+    const model = watchedModel?.trim() || '';
+    const category = watchedCategory ? CATEGORY_TO_DB[watchedCategory] : undefined;
+    const year = typeof watchedYear === 'number' && !Number.isNaN(watchedYear) ? watchedYear : undefined;
+
+    return { title, brand, model, category, year };
+  }, [watchedTitle, watchedBrand, watchedModel, watchedCategory, watchedYear]);
+
+  useEffect(() => {
+    const hasEnoughSignal =
+      duplicateQuery.title.length >= 4 ||
+      duplicateQuery.brand.length >= 2 ||
+      duplicateQuery.model.length >= 2;
+
+    if (!hasEnoughSignal) {
+      setDuplicateCandidates([]);
+      setCheckingDuplicates(false);
+      return;
     }
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(async () => {
+      try {
+        setCheckingDuplicates(true);
+        const params = new URLSearchParams();
+        if (duplicateQuery.title) params.set('title', duplicateQuery.title);
+        if (duplicateQuery.brand) params.set('brand', duplicateQuery.brand);
+        if (duplicateQuery.model) params.set('model', duplicateQuery.model);
+        if (duplicateQuery.category) params.set('category', duplicateQuery.category);
+        if (duplicateQuery.year) params.set('year', String(duplicateQuery.year));
+        if (existingListing?.id) params.set('excludeId', existingListing.id);
+
+        const response = await fetch(`/api/admin/listings/duplicates?${params.toString()}`, {
+          signal: controller.signal,
+          cache: 'no-store',
+        });
+        if (!response.ok) {
+          return;
+        }
+
+        const payload = await response.json() as { duplicates?: DuplicateCandidate[] };
+        setDuplicateCandidates(payload.duplicates || []);
+      } catch (error) {
+        if ((error as Error).name !== 'AbortError') {
+          console.error('Duplicate check failed:', error);
+        }
+      } finally {
+        setCheckingDuplicates(false);
+      }
+    }, 450);
+
+    return () => {
+      clearTimeout(timeoutId);
+      controller.abort();
+    };
+  }, [duplicateQuery, existingListing?.id]);
+
+  async function onSubmit(data: ListingFormValues) {
+    let success = false;
+    if (existingListing) {
+      success = await updateListing(existingListing.id, data);
+    } else {
+      success = await addListing(data);
+    }
+
+    if (!success) {
+      toast({ variant: 'destructive', title: 'Save failed', description: 'Could not save listing. Please try again.' });
+      return;
+    }
+
+    toast({ title: 'Success', description: existingListing ? 'Listing updated successfully.' : 'Listing created successfully.' });
     router.push('/admin/listings');
     router.refresh();
   }
@@ -254,6 +345,32 @@ export default function ListingForm({ existingListing }: ListingFormProps) {
                 <FormItem><FormLabel>Year</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
               )} />
             </div>
+            {(checkingDuplicates || duplicateCandidates.length > 0) && (
+              <div className="rounded-lg border border-amber-300/50 bg-amber-50 p-3">
+                <div className="flex items-center gap-2 text-amber-900">
+                  <AlertTriangle className="h-4 w-4" />
+                  <p className="text-sm font-medium">Potential duplicate listings</p>
+                  {checkingDuplicates && <Loader2 className="h-4 w-4 animate-spin" />}
+                </div>
+                {duplicateCandidates.length > 0 ? (
+                  <div className="mt-2 space-y-2">
+                    {duplicateCandidates.map((candidate) => (
+                      <div key={candidate.id} className="rounded-md border border-amber-200 bg-white p-2 text-sm">
+                        <p className="font-medium text-slate-900">{candidate.title}</p>
+                        <p className="text-slate-600">
+                          {candidate.brand}
+                          {candidate.model ? ` ${candidate.model}` : ''}
+                          {candidate.year ? ` • ${candidate.year}` : ''} • Score {candidate.score}
+                        </p>
+                        <p className="text-slate-500">{candidate.city || candidate.country}</p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  !checkingDuplicates && <p className="mt-2 text-xs text-amber-800">No strong duplicates found.</p>
+                )}
+              </div>
+            )}
           </CardContent>
         </Card>
 

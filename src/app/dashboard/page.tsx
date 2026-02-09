@@ -1,136 +1,147 @@
 'use client';
-import { useAuth } from '@/hooks/use-auth';
-import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { ArrowRight, FileText, Search, Settings, Star, Truck } from 'lucide-react';
+
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { FileText, LayoutDashboard, Package, SearchCheck, UserCircle2 } from 'lucide-react';
+import { useAuth } from '@/hooks/use-auth';
+import { useRfqs } from '@/hooks/use-rfqs';
+import { useListings } from '@/hooks/use-listings';
 import { Skeleton } from '@/components/ui/skeleton';
 
+function StatCard({ label, value, hint }: { label: string; value: string; hint: string }) {
+  return (
+    <div className="fx-lift rounded-2xl border border-border bg-card p-5">
+      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</p>
+      <p className="mt-2 text-3xl font-extrabold tracking-tight text-slate-900">{value}</p>
+      <p className="mt-1 text-sm text-slate-600">{hint}</p>
+    </div>
+  );
+}
+
 export default function DashboardPage() {
-  const { user, loading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
+  const { rfqs, loading: rfqsLoading } = useRfqs();
+  const { listings, loading: listingsLoading } = useListings();
   const router = useRouter();
+  const [onboarding, setOnboarding] = useState<{
+    completionRate: number;
+    items: Array<{ key: string; label: string; done: boolean }>;
+  } | null>(null);
 
   useEffect(() => {
-    if (!loading && !user) {
+    if (!authLoading && !user) {
       router.push('/login?redirect=/dashboard');
     }
-  }, [user, loading, router]);
+  }, [user, authLoading, router]);
+
+  useEffect(() => {
+    let active = true;
+    const loadOnboarding = async () => {
+      if (!user) return;
+      try {
+        const res = await fetch('/api/auth/onboarding-checklist', { cache: 'no-store' });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (active) setOnboarding(data);
+      } catch (error) {
+        console.error('Failed to load onboarding checklist:', error);
+      }
+    };
+    void loadOnboarding();
+    return () => {
+      active = false;
+    };
+  }, [user]);
+
+  const loading = authLoading || rfqsLoading || listingsLoading;
+
+  const stats = useMemo(() => {
+    if (!user) {
+      return {
+        myRfqs: 0,
+        activeRfqs: 0,
+        liveListings: 0,
+      };
+    }
+    const myRfqs = rfqs.filter((rfq) => rfq.userId === user.id);
+    return {
+      myRfqs: myRfqs.length,
+      activeRfqs: myRfqs.filter((rfq) => !['Won', 'Lost'].includes(rfq.status)).length,
+      liveListings: listings.filter((listing) => listing.availabilityStatus !== 'sold').length,
+    };
+  }, [user, rfqs, listings]);
 
   if (loading || !user) {
     return (
-        <div className="container py-8">
-            <Skeleton className="h-12 w-1/3 mb-8" />
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                <Skeleton className="h-48" />
-                <Skeleton className="h-48" />
-                <Skeleton className="h-48" />
-                 <Skeleton className="h-48" />
-            </div>
+      <div className="container mx-auto px-4 py-10">
+        <Skeleton className="mb-4 h-10 w-64" />
+        <Skeleton className="mb-8 h-5 w-96" />
+        <div className="grid gap-4 md:grid-cols-3">
+          <Skeleton className="h-36" />
+          <Skeleton className="h-36" />
+          <Skeleton className="h-36" />
         </div>
+      </div>
     );
   }
 
-  const profileIsIncomplete = !user.phone || !user.country || (user.accountType === 'company' && !user.companyName);
-
   return (
-    <div className="container py-8">
-      <h1 className="font-headline text-3xl font-bold tracking-tight mb-8">
-        Welcome back, {user.name.split(' ')[0]}
-      </h1>
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {profileIsIncomplete && (
-            <Card className="bg-primary/10 border-primary/20 md:col-span-2 lg:col-span-3">
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                    <Settings className="h-6 w-6 text-primary" />
-                    Complete Your Profile
-                    </CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <p className="text-muted-foreground mb-4">
-                    Provide more details to build trust and streamline your experience.
-                    </p>
-                    <Button asChild>
-                        <Link href="/profile">
-                            Go to Profile <ArrowRight className="ml-2 h-4 w-4" />
-                        </Link>
-                    </Button>
-                </CardContent>
-            </Card>
-        )}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <FileText className="h-6 w-6 text-primary" />
-              New Sourcing Request
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground mb-4">
-              Can&apos;t find what you&apos;re looking for? Let our team source it for you.
-            </p>
-            <Button asChild>
-              <Link href="/rfq/new">
-                Create RFQ <ArrowRight className="ml-2 h-4 w-4" />
-              </Link>
-            </Button>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Truck className="h-6 w-6 text-primary" />
-              Browse Inventory
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground mb-4">
-              Explore the latest trucks, trailers, and heavy equipment.
-            </p>
-            <Button asChild variant="outline">
-              <Link href="/listings">
-                Start Browsing <ArrowRight className="ml-2 h-4 w-4" />
-              </Link>
-            </Button>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Search className="h-6 w-6 text-primary" />
-              My Sourcing Requests
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground mb-4">
-              Track the status of your active sourcing requests (RFQs).
-            </p>
-            <Button asChild variant="outline">
-              <Link href="/dashboard/rfqs">
-                View My RFQs <ArrowRight className="ml-2 h-4 w-4" />
-              </Link>
-            </Button>
-          </CardContent>
-        </Card>
-        
-        <Card className="opacity-50 cursor-not-allowed">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Star className="h-6 w-6" />
-              Saved Listings
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground mb-4">
-              Keep track of equipment you're interested in. (Coming Soon)
-            </p>
-            <Button variant="outline" disabled>
-              View Saved
-            </Button>
-          </CardContent>
-        </Card>
+    <div className="container mx-auto px-4 py-10">
+      <div className="rounded-3xl border border-border bg-gradient-to-r from-slate-900 via-slate-800 to-sky-900 p-7 text-white md:p-10">
+        <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide">
+          <LayoutDashboard className="h-4 w-4" />
+          Control center
+        </div>
+        <h1 className="mt-4 text-3xl font-extrabold tracking-tight md:text-4xl">
+          Welcome back, {user.name.split(' ')[0]}
+        </h1>
+        <p className="mt-2 max-w-2xl text-sm text-slate-200 md:text-base">
+          Monitor sourcing performance, jump into active requests, and keep your buyer profile complete.
+        </p>
+      </div>
+
+      <div className="mt-8 grid gap-4 md:grid-cols-3">
+        <StatCard label="My RFQs" value={String(stats.myRfqs)} hint="Total requests submitted" />
+        <StatCard label="Active RFQs" value={String(stats.activeRfqs)} hint="Awaiting action or offer" />
+        <StatCard label="Live Listings" value={String(stats.liveListings)} hint="Currently available inventory" />
+      </div>
+
+      {onboarding && onboarding.completionRate < 100 ? (
+        <div className="mt-8 rounded-2xl border border-border bg-card p-5">
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="text-base font-bold text-slate-900">First-session checklist</h2>
+            <span className="rounded-full bg-amber-100 px-2 py-1 text-xs font-semibold text-amber-700">
+              {onboarding.completionRate}% complete
+            </span>
+          </div>
+          <div className="mt-3 space-y-2">
+            {onboarding.items.map((item) => (
+              <p key={item.key} className={`text-sm ${item.done ? 'text-emerald-700' : 'text-slate-600'}`}>
+                {item.done ? '✓' : '○'} {item.label}
+              </p>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
+      <div className="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        {[
+          { href: '/rfq/new', label: 'Create RFQ', icon: SearchCheck, copy: 'Start a new sourcing request' },
+          { href: '/dashboard/rfqs', label: 'My Requests', icon: FileText, copy: 'Review timelines and offers' },
+          { href: '/listings', label: 'Browse Listings', icon: Package, copy: 'Find available equipment' },
+          { href: '/profile', label: 'Profile', icon: UserCircle2, copy: 'Update company details' },
+        ].map((item) => (
+          <Link
+            key={item.href}
+            href={item.href}
+            className="fx-lift rounded-2xl border border-border bg-card p-5 transition hover:border-primary/40 hover:shadow-sm"
+          >
+            <item.icon className="h-5 w-5 text-primary" />
+            <h2 className="mt-3 text-base font-bold text-slate-900">{item.label}</h2>
+            <p className="mt-1 text-sm text-slate-600">{item.copy}</p>
+          </Link>
+        ))}
       </div>
     </div>
   );

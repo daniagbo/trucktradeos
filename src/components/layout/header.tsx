@@ -1,11 +1,14 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { Menu, LogOut, LayoutDashboard, User as UserIcon, FileText, Bell } from 'lucide-react';
 import { Logo } from '@/components/icons';
 import { Button } from '@/components/ui/button';
-import { useAuth } from '@/hooks/use-auth';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/hooks/use-auth';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,176 +18,262 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { LayoutDashboard, LogOut, Settings, Truck, User as UserIcon, FileText } from 'lucide-react';
-import { Sheet, SheetContent, SheetTrigger } from '../ui/sheet';
-import { Menu } from 'lucide-react';
-import { useState } from 'react';
+import { formatDistanceToNow } from 'date-fns';
+import CommandPalette from '@/components/layout/command-palette';
 
-const NavLink = ({ href, children }: { href: string; children: React.ReactNode }) => {
+const navItems = [
+  { href: '/listings', label: 'Inventory' },
+  { href: '/bulk-sourcing', label: 'Bulk Sourcing' },
+  { href: '/rfq/new', label: 'New Request' },
+];
+
+function NavLink({ href, label, onClick }: { href: string; label: string; onClick?: () => void }) {
   const pathname = usePathname();
-  const isActive = pathname === href;
+  const active = pathname === href || pathname.startsWith(`${href}/`);
   return (
     <Link
       href={href}
+      onClick={onClick}
       className={cn(
-        'text-sm font-medium transition-colors hover:text-primary',
-        isActive ? 'text-primary' : 'text-muted-foreground'
+        'rounded-lg px-3 py-2 text-sm font-medium transition',
+        active ? 'bg-primary/10 text-primary' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
       )}
     >
-      {children}
+      {label}
     </Link>
   );
-};
+}
 
 export default function Header() {
-  const { user, logout, loading } = useAuth();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { user, loading, logout } = useAuth();
+  const [open, setOpen] = useState(false);
+  const [notifications, setNotifications] = useState<Array<{ id: string; title: string; message: string; read: boolean; createdAt: string }>>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
 
-  const getInitials = (name: string = '') => {
-    return name.split(' ').map(n => n[0]).join('').toUpperCase();
+  const initials = (user?.name || 'U')
+    .split(' ')
+    .map((chunk) => chunk[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase();
+
+  useEffect(() => {
+    if (!user) {
+      setNotifications([]);
+      setUnreadCount(0);
+      return;
+    }
+
+    let cancelled = false;
+    const fetchNotifications = async () => {
+      try {
+        const res = await fetch('/api/notifications?limit=12', { cache: 'no-store' });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!cancelled) {
+          setNotifications(Array.isArray(data.notifications) ? data.notifications : []);
+          setUnreadCount(typeof data.unreadCount === 'number' ? data.unreadCount : 0);
+        }
+      } catch {
+        // best effort
+      }
+    };
+
+    void fetchNotifications();
+    const interval = setInterval(() => {
+      void fetchNotifications();
+      if (user.role === 'admin') {
+        void fetch('/api/admin/notifications/sla-check', { method: 'POST' });
+      }
+    }, 60000);
+
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, [user]);
+
+  const markOneRead = async (id: string) => {
+    await fetch(`/api/notifications/${id}`, { method: 'PATCH' });
+    setNotifications((prev) => prev.map((item) => (item.id === id ? { ...item, read: true } : item)));
+    setUnreadCount((prev) => Math.max(0, prev - 1));
   };
 
-  const MobileNav = () => (
-    <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-      <SheetTrigger asChild>
-        <Button variant="ghost" size="icon" className="md:hidden text-foreground">
-          <Menu />
-          <span className="sr-only">Open menu</span>
-        </Button>
-      </SheetTrigger>
-      <SheetContent side="left" className="glass-dark border-r-white/10 text-foreground">
-        <div className="flex flex-col gap-6 p-6">
-          <Link href="/" className="flex items-center gap-2 mb-8" onClick={() => setMobileMenuOpen(false)}>
-            <div className="h-10 w-10 rounded-xl bg-primary flex items-center justify-center shadow-lg shadow-primary/20">
-              <Logo className="text-white h-6 w-6" />
-            </div>
-            <span className="font-bold font-headline text-xl tracking-tight">TruckTradeOS</span>
-          </Link>
-          <Link href="/listings" className="text-lg font-medium hover:text-primary transition-colors" onClick={() => setMobileMenuOpen(false)}>Inventory</Link>
-          <Link href="#" className="text-lg font-medium hover:text-primary transition-colors" onClick={() => setMobileMenuOpen(false)}>How it Works</Link>
-          <Link href="#" className="text-lg font-medium hover:text-primary transition-colors" onClick={() => setMobileMenuOpen(false)}>Sourcing Request</Link>
-          {user && (
-            <>
-              <div className="h-px bg-white/10 my-2" />
-              <Link href="/dashboard" className="text-lg font-medium hover:text-primary transition-colors" onClick={() => setMobileMenuOpen(false)}>Dashboard</Link>
-              <Link href="/dashboard/rfqs" className="text-lg font-medium hover:text-primary transition-colors" onClick={() => setMobileMenuOpen(false)}>Sourcing Requests</Link>
-            </>
-          )}
-          <div className="mt-auto pt-8">
-            {user ? (
-              <div className="flex flex-col gap-3">
-                <Button asChild variant="outline" className="w-full justify-start border-white/10 hover:bg-white/5 truncate">
-                  <Link href="/profile"><Settings className="mr-3 h-4 w-4" />{user.name}</Link>
-                </Button>
-                <Button onClick={() => { logout(); setMobileMenuOpen(false); }} variant="ghost" className="w-full justify-start text-red-400 hover:text-red-300 hover:bg-red-400/10">
-                  <LogOut className="mr-3 h-4 w-4" />Logout
-                </Button>
-              </div>
-            ) : (
-              <div className="flex flex-col gap-3">
-                <Button asChild className="w-full shadow-lg shadow-primary/20"><Link href="/login">Sign In</Link></Button>
-                <Button asChild variant="outline" className="w-full border-white/10 bg-white/5"><Link href="/register">Create Account</Link></Button>
-              </div>
-            )}
-          </div>
-        </div>
-      </SheetContent>
-    </Sheet>
-  );
+  const markAllRead = async () => {
+    await fetch('/api/notifications', { method: 'PATCH' });
+    setNotifications((prev) => prev.map((item) => ({ ...item, read: true })));
+    setUnreadCount(0);
+  };
 
   return (
-    <header className="fixed top-0 z-50 w-full transition-all duration-300">
-      <div className="container mx-auto px-4">
-        <div className="mt-4 flex h-16 items-center justify-between rounded-2xl glass border border-white/10 px-4 md:px-8 shadow-2xl">
-          <div className="flex items-center gap-8">
-            <Link href="/" className="flex items-center gap-3 group">
-              <div className="h-9 w-9 rounded-lg bg-primary flex items-center justify-center group-hover:scale-110 transition-transform">
-                <Logo className="text-white h-5 w-5" />
-              </div>
-              <span className="font-bold font-headline text-lg tracking-tight hidden sm:inline-block">TruckTradeOS</span>
-            </Link>
-
-            <nav className="hidden lg:flex items-center gap-8 text-sm font-medium">
-              <NavLink href="/listings">Inventory</NavLink>
-              <Link href="#" className="text-muted-foreground hover:text-primary transition-colors">How it Works</Link>
-              <Link href="#" className="text-muted-foreground hover:text-primary transition-colors">Sourcing Request</Link>
-            </nav>
-          </div>
-
-          <div className="flex items-center gap-4">
-            <div className="md:hidden">
-              <MobileNav />
+    <header className="fixed inset-x-0 top-0 z-50 border-b border-border/80 bg-background/95 backdrop-blur">
+      <div className="container mx-auto flex h-20 items-center justify-between px-4">
+        <div className="flex items-center gap-3">
+          <Link href="/" className="flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-white">
+              <Logo className="h-5 w-5" />
             </div>
+            <span className="text-lg font-bold tracking-tight text-slate-900">FleetSource</span>
+          </Link>
+          <nav className="hidden items-center gap-1 md:flex">
+            {navItems.map((item) => (
+              <NavLink key={item.href} href={item.href} label={item.label} />
+            ))}
+          </nav>
+        </div>
 
-            <nav className="flex items-center gap-4">
-              {!loading && (
-                <>
+        <div className="flex items-center gap-2">
+          <CommandPalette user={user} />
+          <Sheet open={open} onOpenChange={setOpen}>
+            <SheetTrigger asChild>
+              <Button variant="ghost" size="icon" className="md:hidden">
+                <Menu className="h-5 w-5" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="w-[85vw] max-w-sm p-0">
+              <div className="flex h-full flex-col gap-2 p-4">
+                {navItems.map((item) => (
+                  <NavLink key={item.href} href={item.href} label={item.label} onClick={() => setOpen(false)} />
+                ))}
+                <div className="mt-auto border-t border-border pt-3">
                   {user ? (
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="relative h-9 w-9 rounded-full ring-2 ring-primary/20 hover:ring-primary/40 transition-all">
-                          <Avatar className="h-9 w-9">
-                            <AvatarImage src={`https://avatar.vercel.sh/${user.email}.png`} alt={user.name} />
-                            <AvatarFallback className="bg-primary/10 text-primary">{getInitials(user.name)}</AvatarFallback>
-                          </Avatar>
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent className="w-64 glass border-white/10 mt-2" align="end" forceMount>
-                        <DropdownMenuLabel className="font-normal">
-                          <div className="flex flex-col space-y-1 p-1">
-                            <p className="text-sm font-semibold leading-none">{user.name}</p>
-                            <p className="text-xs leading-none text-muted-foreground mt-1">{user.email}</p>
-                          </div>
-                        </DropdownMenuLabel>
-                        <DropdownMenuSeparator className="bg-white/10" />
-                        <div className="p-1">
-                          <DropdownMenuItem asChild className="rounded-lg focus:bg-primary/10 cursor-pointer">
-                            <Link href="/dashboard"><LayoutDashboard className="mr-3 h-4 w-4 text-primary" />Dashboard</Link>
-                          </DropdownMenuItem>
-                          <DropdownMenuItem asChild className="rounded-lg focus:bg-primary/10 cursor-pointer">
-                            <Link href="/dashboard/rfqs"><FileText className="mr-3 h-4 w-4 text-primary" />Sourcing Requests</Link>
-                          </DropdownMenuItem>
-                          <DropdownMenuItem asChild className="rounded-lg focus:bg-primary/10 cursor-pointer">
-                            <Link href="/profile"><Settings className="mr-3 h-4 w-4 text-primary" />Settings</Link>
-                          </DropdownMenuItem>
-                        </div>
-                        {user.role === 'admin' && (
-                          <>
-                            <DropdownMenuSeparator className="bg-white/10" />
-                            <div className="px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-muted-foreground opacity-60">Admin Control</div>
-                            <div className="p-1">
-                              <DropdownMenuItem asChild className="rounded-lg focus:bg-red-400/10 cursor-pointer">
-                                <Link href="/admin/listings"><Truck className="mr-3 h-4 w-4 text-primary" />Inventory Sync</Link>
-                              </DropdownMenuItem>
-                              <DropdownMenuItem asChild className="rounded-lg focus:bg-red-400/10 cursor-pointer">
-                                <Link href="/admin/rfqs"><FileText className="mr-3 h-4 w-4 text-primary" />Market Deals</Link>
-                              </DropdownMenuItem>
-                            </div>
-                          </>
-                        )}
-                        <DropdownMenuSeparator className="bg-white/10" />
-                        <div className="p-1">
-                          <DropdownMenuItem onClick={logout} className="rounded-lg focus:bg-red-400/10 text-red-400 cursor-pointer">
-                            <LogOut className="mr-3 h-4 w-4" />
-                            <span>Sign Out</span>
-                          </DropdownMenuItem>
-                        </div>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                    <Button
+                      variant="ghost"
+                      className="w-full justify-start text-red-600 hover:bg-red-50 hover:text-red-700"
+                      onClick={() => {
+                        logout();
+                        setOpen(false);
+                      }}
+                    >
+                      <LogOut className="mr-2 h-4 w-4" />
+                      Sign out
+                    </Button>
                   ) : (
-                    <div className="hidden md:flex items-center gap-3">
-                      <Button asChild variant="ghost" className="hover:bg-white/5 active:scale-95 transition-all">
-                        <Link href="/login">Sign In</Link>
+                    <div className="grid gap-2">
+                      <Button asChild variant="outline" onClick={() => setOpen(false)}>
+                        <Link href="/login">Sign in</Link>
                       </Button>
-                      <Button asChild className="bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 rounded-xl px-6 active:scale-95 transition-all">
-                        <Link href="/register">Get Started</Link>
+                      <Button asChild onClick={() => setOpen(false)}>
+                        <Link href="/register">Create account</Link>
                       </Button>
                     </div>
                   )}
-                </>
-              )}
-            </nav>
-          </div>
+                </div>
+              </div>
+            </SheetContent>
+          </Sheet>
+
+          {!loading &&
+            (user ? (
+              <div className="flex items-center gap-2">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="relative h-10 w-10 rounded-full p-0">
+                      <Bell className="h-5 w-5" />
+                      {unreadCount > 0 && (
+                        <span className="absolute -right-0.5 -top-0.5 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold text-white">
+                          {unreadCount > 9 ? '9+' : unreadCount}
+                        </span>
+                      )}
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-80">
+                    <DropdownMenuLabel className="flex items-center justify-between">
+                      <span>Notifications</span>
+                      {unreadCount > 0 ? (
+                        <button className="text-xs font-medium text-primary" onClick={markAllRead}>
+                          Mark all read
+                        </button>
+                      ) : null}
+                    </DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    {notifications.length === 0 ? (
+                      <DropdownMenuItem className="text-sm text-slate-500">No notifications yet.</DropdownMenuItem>
+                    ) : (
+                      notifications.map((item) => (
+                        <DropdownMenuItem key={item.id} className="block py-2" onClick={() => !item.read && markOneRead(item.id)}>
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="min-w-0">
+                              <p className={`text-sm ${item.read ? 'text-slate-700' : 'font-semibold text-slate-900'}`}>{item.title}</p>
+                              <p className="line-clamp-2 text-xs text-slate-500">{item.message}</p>
+                              <p className="mt-1 text-[11px] text-slate-400">
+                                {formatDistanceToNow(new Date(item.createdAt), { addSuffix: true })}
+                              </p>
+                            </div>
+                            {!item.read ? <span className="mt-1 h-2 w-2 rounded-full bg-primary" /> : null}
+                          </div>
+                        </DropdownMenuItem>
+                      ))
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="h-10 w-10 rounded-full p-0">
+                      <Avatar className="h-10 w-10">
+                        <AvatarImage src={`https://avatar.vercel.sh/${user.email}.png`} alt={user.name} />
+                        <AvatarFallback>{initials}</AvatarFallback>
+                      </Avatar>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56">
+                    <DropdownMenuItem asChild>
+                      <Link href="/dashboard">
+                        <LayoutDashboard className="mr-2 h-4 w-4" />
+                        Dashboard
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href="/dashboard/rfqs">
+                        <FileText className="mr-2 h-4 w-4" />
+                        My requests
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href="/profile">
+                        <UserIcon className="mr-2 h-4 w-4" />
+                        Profile
+                      </Link>
+                    </DropdownMenuItem>
+                    {user.role === 'admin' && (
+                      <>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem asChild>
+                          <Link href="/admin/listings">Admin listings</Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                          <Link href="/admin/rfqs">Admin RFQs</Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                          <Link href="/admin/insights">Admin insights</Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                          <Link href="/admin/automation">Admin automation</Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                          <Link href="/admin/settings">Admin settings</Link>
+                        </DropdownMenuItem>
+                      </>
+                    )}
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={logout} className="text-red-600 focus:text-red-700">
+                      <LogOut className="mr-2 h-4 w-4" />
+                      Sign out
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            ) : (
+              <div className="hidden items-center gap-2 md:flex">
+                <Button asChild variant="ghost">
+                  <Link href="/login">Sign in</Link>
+                </Button>
+                <Button asChild>
+                  <Link href="/register">Get started</Link>
+                </Button>
+              </div>
+            ))}
         </div>
       </div>
     </header>

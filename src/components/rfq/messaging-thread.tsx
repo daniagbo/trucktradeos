@@ -51,17 +51,19 @@ export default function MessagingThread({ rfqId }: MessagingThreadProps) {
         <div>
             <div className="space-y-6">
                 {messages.map((msg: RFQMessage) => (
-                    <div key={msg.id} className={cn("flex items-start gap-4", msg.senderType === 'buyer' ? "justify-end" : "justify-start")}>
+                    <div key={msg.id} className={cn("stagger-item flex items-start gap-3 md:gap-4", msg.senderType === 'buyer' ? "justify-end" : "justify-start")}>
                         {msg.senderType === 'admin' && (
                             <Avatar>
                                 <AvatarFallback>A</AvatarFallback>
                             </Avatar>
                         )}
                         <div className={cn(
-                            "rounded-lg p-3 max-w-lg",
-                            msg.senderType === 'buyer' ? "bg-primary text-primary-foreground" : "bg-secondary"
+                            "rounded-2xl p-3 max-w-lg border shadow-sm",
+                            msg.senderType === 'buyer'
+                                ? "bg-primary text-primary-foreground border-primary/30"
+                                : "bg-white dark:bg-gray-900 border-gray-100 dark:border-gray-800"
                         )}>
-                            <p className="text-sm">{msg.message}</p>
+                            <p className="text-sm leading-relaxed">{msg.message}</p>
                             <p className={cn("text-xs mt-1", msg.senderType === 'buyer' ? 'text-primary-foreground/70' : 'text-muted-foreground')}>
                                 {format(new Date(msg.createdAt), "MMM d, yyyy 'at' h:mm a")}
                             </p>
@@ -75,9 +77,9 @@ export default function MessagingThread({ rfqId }: MessagingThreadProps) {
                     </div>
                 ))}
             </div>
-            <div className="mt-6 pt-6 border-t">
+            <div className="mt-6 border-t pt-6">
                 <Form {...form}>
-                    <form onSubmit={form.handleSubmit(onSubmit)} className="flex items-start gap-4">
+                    <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-start sm:gap-4">
                         <FormField control={form.control} name="message" render={({ field }) => (
                             <FormItem className="flex-1">
                                 <FormControl>
@@ -86,7 +88,7 @@ export default function MessagingThread({ rfqId }: MessagingThreadProps) {
                                 <FormMessage />
                             </FormItem>
                         )} />
-                        <Button type="submit" disabled={form.formState.isSubmitting}>
+                        <Button className="rounded-xl sm:self-end" type="submit" disabled={form.formState.isSubmitting}>
                            {form.formState.isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
                             Send
                         </Button>

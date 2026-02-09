@@ -4,13 +4,14 @@ import { createContext, useState, useEffect, ReactNode, useCallback } from 'reac
 import { useRouter } from 'next/navigation';
 import type { User } from './types';
 import { useToast } from '@/hooks/use-toast';
+import { normalizeUser } from './normalizers';
 
 
 interface AuthContextType {
   // ... unchanged interface
   user: User | null;
   loading: boolean;
-  login: (email: string, pass: string) => Promise<boolean>;
+  login: (email: string, pass: string) => Promise<{ success: boolean; mustChangePassword?: boolean }>;
   logout: () => void;
   register: (userData: Omit<User, 'id' | 'createdAt' | 'passwordHash' | 'role'> & { password: string }) => Promise<boolean>;
   updateProfile: (updatedData: Partial<User>) => Promise<boolean>;
@@ -19,7 +20,7 @@ interface AuthContextType {
 export const AuthContext = createContext<AuthContextType>({
   user: null,
   loading: true,
-  login: async () => false,
+  login: async () => ({ success: false }),
   logout: () => { },
   register: async () => false,
   updateProfile: async () => false
@@ -43,7 +44,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const res = await fetch('/api/auth/me');
         const data = await res.json();
         if (data.user) {
-          setUser(data.user);
+          setUser(normalizeUser(data.user));
         }
       } catch (error) {
         console.error('Failed to check session:', error);
@@ -55,7 +56,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     checkSession();
   }, []);
 
-  const login = useCallback(async (email: string, pass: string): Promise<boolean> => {
+  const login = useCallback(async (email: string, pass: string): Promise<{ success: boolean; mustChangePassword?: boolean }> => {
     try {
       const res = await fetch('/api/auth/login', {
         method: 'POST',
@@ -67,16 +68,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       if (!res.ok) {
         toast({ variant: 'destructive', title: 'Login Failed', description: data.message || 'Invalid credentials' });
-        return false;
+        return { success: false };
       }
 
-      setUser(data.user);
+      setUser(normalizeUser(data.user));
       toast({ title: 'Login Successful', description: `Welcome back, ${data.user.name}!` });
-      return true;
+      return { success: true, mustChangePassword: Boolean(data.user.mustChangePassword) };
 
     } catch (error) {
       toast({ variant: 'destructive', title: 'Login Failed', description: 'An unexpected error occurred.' });
-      return false;
+      return { success: false };
     }
   }, [toast]);
 
@@ -107,7 +108,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return false;
       }
 
-      setUser(data.user);
+      setUser(normalizeUser(data.user));
       toast({ title: 'Registration Successful', description: `Welcome, ${data.user.name}!` });
 
       // No client-side storage for users anymore
@@ -121,34 +122,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const updateProfile = useCallback(async (updatedData: Partial<User>): Promise<boolean> => {
     if (!user) return false;
-
-    // Optimistic update
-    const previousUser = user;
-    const optimisticUser = { ...user, ...updatedData };
-    setUser(optimisticUser);
-
     try {
-      const res = await fetch('/api/auth/update', {
-        method: 'PUT',
+      const res = await fetch('/api/auth/profile', {
+        method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updatedData),
       });
-
       const data = await res.json();
-
       if (!res.ok) {
-        setUser(previousUser);
-        toast({ variant: 'destructive', title: 'Update Failed', description: data.message || 'Could not update profile.' });
+        toast({ variant: 'destructive', title: 'Update Failed', description: data.message || 'Could not save profile.' });
         return false;
       }
-
-      setUser(data.user);
-      toast({ title: 'Profile Updated', description: 'Your information has been updated successfully.' });
+      setUser(normalizeUser(data.user));
+      toast({ title: 'Profile Updated', description: 'Your information has been saved.' });
       return true;
-
     } catch (error) {
-      setUser(previousUser);
-      toast({ variant: 'destructive', title: 'Update Failed', description: 'An unexpected error occurred.' });
+      console.error('Failed to update profile', error);
+      toast({ variant: 'destructive', title: 'Update Failed', description: 'Unexpected error while saving profile.' });
       return false;
     }
   }, [user, toast]);

@@ -36,7 +36,7 @@ function ListingCard({ listing, isMember, viewMode = 'grid' }: ListingCardProps)
 
   // Grid View (Default)
   return (
-    <Card className="group overflow-hidden hover:shadow-xl hover:shadow-primary/5 hover:-translate-y-1 transition-all duration-300 border-border bg-card flex flex-col h-full rounded-2xl">
+    <Card className="group fx-lift overflow-hidden hover:shadow-xl hover:shadow-primary/5 hover:-translate-y-1 transition-all duration-300 border-border bg-card flex flex-col h-full rounded-2xl">
       <Link href={`/listings/${listing.id}`} className="block relative overflow-hidden aspect-[4/3] w-full bg-secondary">
         <Image
           src={placeholderImage.url}

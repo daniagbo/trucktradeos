@@ -14,6 +14,28 @@ export default function RfqConfirmationPage() {
 
     const rfq = getRfqById(rfqId);
 
+    const addonPrices: Record<string, number> = {
+        Verification: 350,
+        Logistics: 500,
+        Financing: 300,
+        Compliance: 450,
+        DedicatedManager: 1200,
+    };
+    const packageBase: Record<string, number> = {
+        Core: 0,
+        Concierge: 900,
+        Command: 2400,
+    };
+    const tierMultiplier: Record<string, number> = {
+        Standard: 1,
+        Priority: 1.35,
+        Enterprise: 1.9,
+    };
+    const selectedAddons = rfq?.packageAddons || [];
+    const monthlyEstimate =
+        Math.round((packageBase[rfq?.servicePackage || 'Core'] || 0) * (tierMultiplier[rfq?.serviceTier || 'Standard'] || 1)) +
+        selectedAddons.reduce((sum, addon) => sum + (addonPrices[addon] || 0), 0);
+
     if (loading) {
         return (
              <div className="container flex min-h-[calc(100vh-8rem)] items-center justify-center py-12">
@@ -37,6 +59,12 @@ export default function RfqConfirmationPage() {
                         Your request ID is <span className="font-mono text-foreground">{rfq?.id}</span>.
                         We are reviewing your requirements and will get back to you shortly. You can track the status of your request in your dashboard.
                     </p>
+                    <div className="rounded-xl border border-border bg-muted/30 p-3 text-left text-sm">
+                        <p><strong>Service lane:</strong> {rfq?.serviceTier || 'Standard'}</p>
+                        <p><strong>Package:</strong> {rfq?.servicePackage || 'Core'}</p>
+                        <p><strong>Add-ons:</strong> {selectedAddons.length > 0 ? selectedAddons.join(', ') : 'None'}</p>
+                        <p><strong>Estimated managed spend:</strong> ${monthlyEstimate.toLocaleString()}/month</p>
+                    </div>
                     <div className="flex gap-4 justify-center">
                         <Button asChild>
                             <Link href="/dashboard/rfqs">Track My RFQs</Link>

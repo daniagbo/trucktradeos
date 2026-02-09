@@ -1,8 +1,8 @@
-import ListingDetailView from '@/components/listings/listing-detail-view';
+import FleetSourceListingDetailPage from '@/components/fleetsource/listing-detail-page';
 
 export default async function ListingDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   return (
-    <ListingDetailView listingId={id} />
+    <FleetSourceListingDetailPage listingId={id} />
   );
 }

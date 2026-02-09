@@ -35,9 +35,9 @@ export default function CloseRfqDialog({ rfqId, children, open, onOpenChange }: 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogTrigger asChild>{children}</DialogTrigger>
-            <DialogContent>
+            <DialogContent className="rounded-2xl border-gray-100 dark:border-gray-800">
                 <DialogHeader>
-                    <DialogTitle>Close RFQ</DialogTitle>
+                    <DialogTitle className="text-[#111318] dark:text-white">Close RFQ</DialogTitle>
                     <DialogDescription>Set the final status for this sourcing request.</DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4 py-4">
@@ -64,8 +64,8 @@ export default function CloseRfqDialog({ rfqId, children, open, onOpenChange }: 
                     )}
                 </div>
                 <DialogFooter>
-                    <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-                    <Button onClick={handleSubmit}>Confirm and Close</Button>
+                    <Button className="rounded-xl" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+                    <Button className="rounded-xl" onClick={handleSubmit}>Confirm and Close</Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>

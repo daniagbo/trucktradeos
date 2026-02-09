@@ -1,8 +1,7 @@
 'use client';
 
 import { createContext, useState, useEffect, ReactNode, useCallback } from 'react';
-import type { RFQ, RFQMessage, RFQStatus, Offer, OfferStatus, RFQEvent } from './types';
-import { mockRfqs, mockRfqMessages, mockOffers } from './mock-rfq-data';
+import type { RFQ, RFQMessage, RFQStatus, Offer, OfferStatus } from './types';
 import { useToast } from '@/hooks/use-toast';
 
 interface RfqsContextType {
@@ -25,10 +24,6 @@ interface RfqsContextType {
 
 export const RfqsContext = createContext<RfqsContextType | undefined>(undefined);
 
-const RFQS_STORAGE_KEY = 'b2b_marketplace_rfqs';
-const RFQ_MESSAGES_STORAGE_KEY = 'b2b_marketplace_rfq_messages';
-const OFFERS_STORAGE_KEY = 'b2b_marketplace_offers';
-
 export const RfqsProvider = ({ children }: { children: ReactNode }) => {
   const [rfqs, setRfqs] = useState<RFQ[]>([]);
   const [messages, setMessages] = useState<RFQMessage[]>([]);
@@ -36,66 +31,26 @@ export const RfqsProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
+  const refreshRfqs = useCallback(async () => {
+    try {
+      setLoading(true);
+      const res = await fetch('/api/rfqs', { cache: 'no-store' });
+      if (!res.ok) throw new Error('Failed to fetch RFQs');
+      const data = await res.json();
+      setRfqs(data.rfqs || []);
+      setMessages(data.messages || []);
+      setOffers(data.offers || []);
+    } catch (error) {
+      console.error(error);
+      toast({ variant: 'destructive', title: 'Failed to load RFQs', description: 'Please refresh and try again.' });
+    } finally {
+      setLoading(false);
+    }
+  }, [toast]);
+
   useEffect(() => {
-    const storedRfqs = localStorage.getItem(RFQS_STORAGE_KEY);
-    if (!storedRfqs) {
-      localStorage.setItem(RFQS_STORAGE_KEY, JSON.stringify(mockRfqs));
-      setRfqs(mockRfqs);
-    } else {
-      setRfqs(JSON.parse(storedRfqs));
-    }
-
-    const storedMessages = localStorage.getItem(RFQ_MESSAGES_STORAGE_KEY);
-    if (!storedMessages) {
-      localStorage.setItem(RFQ_MESSAGES_STORAGE_KEY, JSON.stringify(mockRfqMessages));
-      setMessages(mockRfqMessages);
-    } else {
-      setMessages(JSON.parse(storedMessages));
-    }
-
-    const storedOffers = localStorage.getItem(OFFERS_STORAGE_KEY);
-    if (!storedOffers) {
-      localStorage.setItem(OFFERS_STORAGE_KEY, JSON.stringify(mockOffers));
-      setOffers(mockOffers);
-    } else {
-      setOffers(JSON.parse(storedOffers));
-    }
-
-    setLoading(false);
-  }, []);
-
-  const addEventToRfq = useCallback((rfqId: string, eventData: Omit<RFQEvent, 'id' | 'timestamp'>) => {
-    setRfqs(prevRfqs => {
-      const newRfqs = prevRfqs.map(r => {
-        if (r.id === rfqId) {
-          const newEvent: RFQEvent = {
-            ...eventData,
-            id: `event-${Date.now()}`,
-            timestamp: new Date().toISOString(),
-          };
-          return { ...r, events: [...r.events, newEvent] };
-        }
-        return r;
-      });
-      localStorage.setItem(RFQS_STORAGE_KEY, JSON.stringify(newRfqs));
-      return newRfqs;
-    });
-  }, []);
-
-  const updateRfqStatus = useCallback((rfqId: string, status: RFQStatus) => {
-    const rfq = rfqs.find(r => r.id === rfqId);
-    if (rfq && rfq.status === status) return; // Avoid redundant updates and events
-
-    setRfqs(prevRfqs => {
-      const updatedRfqs = prevRfqs.map(r => r.id === rfqId ? { ...r, status } : r);
-      localStorage.setItem(RFQS_STORAGE_KEY, JSON.stringify(updatedRfqs));
-      return updatedRfqs;
-    });
-
-    addEventToRfq(rfqId, { type: 'status_change', payload: { status } });
-    toast({ title: 'Status Updated', description: `RFQ status changed to ${status}.` });
-  }, [rfqs, toast, addEventToRfq]);
-
+    refreshRfqs();
+  }, [refreshRfqs]);
 
   const getRfqsForUser = useCallback((userId: string) => {
     return rfqs.filter(rfq => rfq.userId === userId).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
@@ -114,110 +69,121 @@ export const RfqsProvider = ({ children }: { children: ReactNode }) => {
   }, [offers]);
 
   const addRfq = useCallback(async (rfqData: Omit<RFQ, 'id' | 'createdAt' | 'status' | 'events'>): Promise<RFQ> => {
-    const newRfq: RFQ = {
-      ...rfqData,
-      id: `rfq-${Date.now()}`,
-      createdAt: new Date().toISOString(),
-      status: 'Received',
-      events: [],
-    };
-
-    addEventToRfq(newRfq.id, { type: 'status_change', payload: { status: 'Received' } });
-
-    const updatedRfqs = [newRfq, ...rfqs];
-    setRfqs(updatedRfqs);
-    localStorage.setItem(RFQS_STORAGE_KEY, JSON.stringify(updatedRfqs));
-
+    const res = await fetch('/api/rfqs', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(rfqData),
+    });
+    if (!res.ok) {
+      toast({ variant: 'destructive', title: 'Submission Failed', description: 'Could not submit sourcing request.' });
+      throw new Error('Failed to create RFQ');
+    }
+    const data = await res.json();
+    await refreshRfqs();
     toast({ title: 'Request Submitted', description: 'Your sourcing request has been received.' });
-    return newRfq;
-  }, [rfqs, toast, addEventToRfq]);
+    return data.rfq as RFQ;
+  }, [refreshRfqs, toast]);
 
   const updateRfqInternalNotes = useCallback((rfqId: string, notes: string) => {
-    const updatedRfqs = rfqs.map(r => r.id === rfqId ? { ...r, internalOpsNotes: notes } : r);
-    setRfqs(updatedRfqs);
-    localStorage.setItem(RFQS_STORAGE_KEY, JSON.stringify(updatedRfqs));
-    toast({ title: 'Note Saved', description: 'Internal note has been updated.' });
-  }, [rfqs, toast]);
+    void (async () => {
+      const res = await fetch(`/api/rfqs/${rfqId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ internalOpsNotes: notes }),
+      });
+      if (!res.ok) {
+        toast({ variant: 'destructive', title: 'Save Failed', description: 'Could not update internal note.' });
+        return;
+      }
+      await refreshRfqs();
+      toast({ title: 'Note Saved', description: 'Internal note has been updated.' });
+    })();
+  }, [refreshRfqs, toast]);
 
   const addMessage = useCallback((messageData: Omit<RFQMessage, 'id' | 'createdAt'>) => {
-    const newMessage: RFQMessage = {
-      ...messageData,
-      id: `msg-${Date.now()}`,
-      createdAt: new Date().toISOString(),
-    };
-    const updatedMessages = [...messages, newMessage];
-    setMessages(updatedMessages);
-    localStorage.setItem(RFQ_MESSAGES_STORAGE_KEY, JSON.stringify(updatedMessages));
-
-    addEventToRfq(newMessage.rfqId, { type: 'message', payload: { message: newMessage.message, author: messageData.senderType === 'admin' ? 'Admin' : 'Buyer' } });
-  }, [messages, addEventToRfq]);
+    void (async () => {
+      const res = await fetch(`/api/rfqs/${messageData.rfqId}/messages`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(messageData),
+      });
+      if (!res.ok) {
+        toast({ variant: 'destructive', title: 'Message Failed', description: 'Could not send message.' });
+        return;
+      }
+      await refreshRfqs();
+    })();
+  }, [refreshRfqs, toast]);
 
   const addOffer = useCallback(async (offerData: Omit<Offer, 'id' | 'createdAt' | 'status' | 'versionNumber'>): Promise<Offer> => {
-    const existingOffers = offers.filter(o => o.rfqId === offerData.rfqId);
-    const newVersion = existingOffers.length > 0 ? Math.max(...existingOffers.map(o => o.versionNumber)) + 1 : 1;
-
-    const newOffer: Offer = {
-      ...offerData,
-      id: `offer-${Date.now()}`,
-      createdAt: new Date().toISOString(),
-      sentAt: new Date().toISOString(),
-      status: 'Sent',
-      versionNumber: newVersion,
-    };
-
-    const updatedOffers = [newOffer, ...offers];
-    setOffers(updatedOffers);
-    localStorage.setItem(OFFERS_STORAGE_KEY, JSON.stringify(updatedOffers));
-
-    updateRfqStatus(newOffer.rfqId, 'Offer sent');
-    addEventToRfq(newOffer.rfqId, {
-      type: 'offer_sent',
-      payload: { offerId: newOffer.id, title: newOffer.title }
+    const res = await fetch(`/api/rfqs/${offerData.rfqId}/offers`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(offerData),
     });
-
+    if (!res.ok) {
+      toast({ variant: 'destructive', title: 'Offer Failed', description: 'Could not create offer.' });
+      throw new Error('Failed to create offer');
+    }
+    const data = await res.json();
+    await refreshRfqs();
     toast({ title: 'Offer Sent', description: 'The offer has been sent to the buyer.' });
-    return newOffer;
-  }, [offers, toast, updateRfqStatus, addEventToRfq]);
+    return data.offer as Offer;
+  }, [refreshRfqs, toast]);
 
 
   const updateOfferStatus = useCallback((offerId: string, status: OfferStatus, reason?: string) => {
-    const offer = offers.find(o => o.id === offerId);
-    if (!offer) return;
-
-    if (status === 'Accepted') {
-      // Decline all other offers for this RFQ
-      const otherOfferIds = offers.filter(o => o.rfqId === offer.rfqId && o.id !== offerId).map(o => o.id);
-      const updatedOffers = offers.map(o => {
-        if (o.id === offerId) return { ...o, status: 'Accepted' };
-        if (otherOfferIds.includes(o.id)) return { ...o, status: 'Declined' as OfferStatus, declineReason: 'Another offer was accepted.' };
-        return o;
+    void (async () => {
+      const res = await fetch(`/api/offers/${offerId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status, reason }),
       });
-      setOffers(updatedOffers as Offer[]);
-      localStorage.setItem(OFFERS_STORAGE_KEY, JSON.stringify(updatedOffers));
-      updateRfqStatus(offer.rfqId, 'Pending execution');
-      addEventToRfq(offer.rfqId, { type: 'offer_accepted', payload: { offerId: offer.id, title: offer.title } });
-      toast({ title: 'Offer Accepted!', description: 'Next steps have been initiated.' });
-
-    } else {
-      const updatedOffers = offers.map(o => o.id === offerId ? { ...o, status, declineReason: reason } : o);
-      setOffers(updatedOffers);
-      localStorage.setItem(OFFERS_STORAGE_KEY, JSON.stringify(updatedOffers));
-
-      if (status === 'Declined') {
-        addEventToRfq(offer.rfqId, { type: 'offer_declined', payload: { offerId: offer.id, title: offer.title, reason } });
+      if (!res.ok) {
+        toast({ variant: 'destructive', title: 'Update Failed', description: 'Could not update offer status.' });
+        return;
+      }
+      await refreshRfqs();
+      if (status === 'Accepted') {
+        toast({ title: 'Offer Accepted!', description: 'Next steps have been initiated.' });
+      } else if (status === 'Declined') {
         toast({ title: 'Offer Declined', description: 'The buyer has declined the offer.' });
       }
-    }
-  }, [offers, toast, updateRfqStatus, addEventToRfq]);
+    })();
+  }, [refreshRfqs, toast]);
 
 
   const closeRfq = useCallback((rfqId: string, status: 'Won' | 'Lost', reason: string) => {
-    const updatedRfqs = rfqs.map(r => r.id === rfqId ? { ...r, status, closeReason: reason } : r);
-    setRfqs(updatedRfqs);
-    localStorage.setItem(RFQS_STORAGE_KEY, JSON.stringify(updatedRfqs));
-    addEventToRfq(rfqId, { type: 'rfq_closed', payload: { status, reason } });
-    toast({ title: `RFQ Closed as ${status}`, description: `The RFQ has been moved to a final state.` });
-  }, [rfqs, toast, addEventToRfq]);
+    void (async () => {
+      const res = await fetch(`/api/rfqs/${rfqId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ closeStatus: status, closeReason: reason }),
+      });
+      if (!res.ok) {
+        toast({ variant: 'destructive', title: 'Close Failed', description: 'Could not close RFQ.' });
+        return;
+      }
+      await refreshRfqs();
+      toast({ title: `RFQ Closed as ${status}`, description: 'The RFQ has been moved to a final state.' });
+    })();
+  }, [refreshRfqs, toast]);
+
+  const updateRfqStatus = useCallback((rfqId: string, status: RFQStatus) => {
+    void (async () => {
+      const res = await fetch(`/api/rfqs/${rfqId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status }),
+      });
+      if (!res.ok) {
+        toast({ variant: 'destructive', title: 'Status Failed', description: 'Could not update RFQ status.' });
+        return;
+      }
+      await refreshRfqs();
+      toast({ title: 'Status Updated', description: `RFQ status changed to ${status}.` });
+    })();
+  }, [refreshRfqs, toast]);
 
 
   const value: RfqsContextType = {

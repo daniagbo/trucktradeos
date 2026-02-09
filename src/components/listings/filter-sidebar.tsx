@@ -6,7 +6,6 @@ import { Slider } from '@/components/ui/slider';
 import { Badge } from '@/components/ui/badge';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import type { Listing } from '@/lib/types';
-import { useRouter } from 'next/navigation';
 import { X, Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import SaveSearchButton from './save-search-button';
@@ -24,6 +23,7 @@ type Filters = {
   type: string[];
   quantityMin: number | null;
   isExportReady: boolean;
+  verificationStatus: string[];
   availabilityStatus: string[];
 };
 
@@ -43,7 +43,6 @@ const FilterSection: React.FC<{ title: string, children: React.ReactNode, defaul
 );
 
 export default function FilterSidebar({ listings, filters, setFilters, mobile, onClose }: FilterSidebarProps) {
-  const router = useRouter();
   const [brandSearch, setBrandSearch] = useState('');
 
   // Derived Options
@@ -92,31 +91,16 @@ export default function FilterSidebar({ listings, filters, setFilters, mobile, o
         (newFilters[filterType] as any) = value;
       }
 
-      // Update URL
-      const params = new URLSearchParams();
-      Object.entries(newFilters).forEach(([key, val]) => {
-        if (Array.isArray(val)) {
-          val.forEach(v => params.append(key, v));
-        } else if (val !== null && val !== '' && val !== false) {
-          params.set(key, String(val));
-        }
-      });
-
-      setTimeout(() => {
-        router.replace(`/listings?${params.toString()}`, { scroll: false });
-      }, 0);
-
       return newFilters;
     });
   };
 
   const handleYearChange = (vals: number[]) => {
-    setFilters(prev => ({
+    setFilters((prev) => ({
       ...prev,
       yearMin: vals[0],
       yearMax: vals[1]
     }));
-    // URL update logic duplicated for brevity, ideally refactor
   };
 
   const filteredBrands = filterOptions.brands.filter(b => b.toLowerCase().includes(brandSearch.toLowerCase()));
@@ -179,6 +163,21 @@ export default function FilterSidebar({ listings, filters, setFilters, mobile, o
             checked={filters.isExportReady}
             onCheckedChange={(checked) => handleFilterChange('isExportReady', checked === true)}
           />
+        </div>
+
+        {/* Verification */}
+        <div className="space-y-2 border-b border-dashed pb-4">
+          <h3 className="text-sm font-semibold text-foreground">Verification</h3>
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="filter-verification-verified"
+              checked={filters.verificationStatus.includes('verified')}
+              onCheckedChange={() => handleFilterChange('verificationStatus', 'verified')}
+            />
+            <label htmlFor="filter-verification-verified" className="cursor-pointer text-sm font-medium leading-none">
+              Verified only
+            </label>
+          </div>
         </div>
 
         {/* Category Segmented Control */}
@@ -321,7 +320,7 @@ export default function FilterSidebar({ listings, filters, setFilters, mobile, o
         <div className="p-4 border-t bg-background mt-auto grid grid-cols-2 gap-3 shrink-0 saf-bottom">
           <Button variant="outline" onClick={() => setFilters({
             search: '', category: [], brand: [], yearMin: null, yearMax: null, country: [], condition: [],
-            type: [], quantityMin: null, isExportReady: false, availabilityStatus: []
+            type: [], quantityMin: null, isExportReady: false, verificationStatus: [], availabilityStatus: []
           })}>Reset</Button>
           <Button onClick={onClose}>Show Results</Button>
         </div>

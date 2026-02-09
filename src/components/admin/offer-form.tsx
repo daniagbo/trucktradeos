@@ -1,5 +1,5 @@
 'use client';
-import { useForm, useFieldArray } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { RFQ } from '@/lib/types';
@@ -8,12 +8,15 @@ import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Calendar as CalendarIcon, Loader2, PlusCircle, Trash2 } from 'lucide-react';
+import { Calendar as CalendarIcon, Loader2, Save, Trash2 } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { Calendar } from '../ui/calendar';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { Checkbox } from '../ui/checkbox';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { useEffect, useState } from 'react';
+import { useToast } from '@/hooks/use-toast';
 
 const offerSchema = z.object({
   rfqId: z.string(),
@@ -36,6 +39,20 @@ interface OfferFormProps {
   onFinished: () => void;
 }
 
+type OfferTemplate = {
+  id: string;
+  name: string;
+  category: string | null;
+  title: string;
+  currency: string;
+  terms: string | null;
+  location: string | null;
+  availabilityText: string | null;
+  includedFlags: Record<string, boolean>;
+  notes: string | null;
+  isDefault: boolean;
+};
+
 const includedOptions = [
     { id: 'inspection', label: 'Pre-sale Inspection' },
     { id: 'transport', label: 'Transport Arrangement' },
@@ -44,6 +61,11 @@ const includedOptions = [
 
 export default function OfferForm({ rfq, onFinished }: OfferFormProps) {
   const { addOffer } = useRfqs();
+  const { toast } = useToast();
+  const [templates, setTemplates] = useState<OfferTemplate[]>([]);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
+  const [loadingTemplates, setLoadingTemplates] = useState(false);
+  const [savingTemplate, setSavingTemplate] = useState(false);
 
   const form = useForm<OfferFormValues>({
     resolver: zodResolver(offerSchema),
@@ -56,6 +78,113 @@ export default function OfferForm({ rfq, onFinished }: OfferFormProps) {
       includedFlags: [],
     },
   });
+
+  useEffect(() => {
+    const loadTemplates = async () => {
+      try {
+        setLoadingTemplates(true);
+        const response = await fetch(`/api/admin/offer-templates?category=${encodeURIComponent(rfq.category)}`, {
+          cache: 'no-store',
+        });
+        if (!response.ok) return;
+        const payload = await response.json() as { templates?: OfferTemplate[] };
+        const nextTemplates = payload.templates || [];
+        setTemplates(nextTemplates);
+        const defaultTemplate = nextTemplates.find((template) => template.isDefault);
+        if (defaultTemplate) {
+          setSelectedTemplateId(defaultTemplate.id);
+        }
+      } catch (error) {
+        console.error('Failed to load templates:', error);
+      } finally {
+        setLoadingTemplates(false);
+      }
+    };
+
+    void loadTemplates();
+  }, [rfq.category]);
+
+  const applyTemplate = (template: OfferTemplate) => {
+    form.setValue('title', template.title, { shouldDirty: true });
+    form.setValue('currency', template.currency, { shouldDirty: true });
+    form.setValue('terms', template.terms || '', { shouldDirty: true });
+    form.setValue('location', template.location || '', { shouldDirty: true });
+    form.setValue('availabilityText', template.availabilityText || '', { shouldDirty: true });
+    form.setValue('notes', template.notes || '', { shouldDirty: true });
+    form.setValue(
+      'includedFlags',
+      Object.entries(template.includedFlags || {})
+        .filter(([, value]) => value)
+        .map(([key]) => key),
+      { shouldDirty: true }
+    );
+  };
+
+  const handleSaveAsTemplate = async () => {
+    const name = window.prompt('Template name');
+    if (!name || name.trim().length < 2) return;
+
+    const values = form.getValues();
+    const includedFlagsObject = values.includedFlags.reduce<Record<string, boolean>>((acc, flag) => {
+      acc[flag] = true;
+      return acc;
+    }, {});
+
+    try {
+      setSavingTemplate(true);
+      const response = await fetch('/api/admin/offer-templates', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: name.trim(),
+          category: rfq.category,
+          title: values.title,
+          currency: values.currency || 'USD',
+          terms: values.terms || null,
+          location: values.location || null,
+          availabilityText: values.availabilityText || null,
+          includedFlags: includedFlagsObject,
+          notes: values.notes || null,
+        }),
+      });
+
+      if (!response.ok) {
+        toast({ variant: 'destructive', title: 'Template save failed' });
+        return;
+      }
+
+      const payload = await response.json() as { template: OfferTemplate };
+      setTemplates((prev) => [payload.template, ...prev]);
+      setSelectedTemplateId(payload.template.id);
+      toast({ title: 'Template saved' });
+    } catch (error) {
+      console.error('Failed to save template:', error);
+      toast({ variant: 'destructive', title: 'Template save failed' });
+    } finally {
+      setSavingTemplate(false);
+    }
+  };
+
+  const handleDeleteTemplate = async () => {
+    if (!selectedTemplateId) return;
+
+    try {
+      const response = await fetch(`/api/admin/offer-templates/${selectedTemplateId}`, {
+        method: 'DELETE',
+      });
+      if (!response.ok) {
+        toast({ variant: 'destructive', title: 'Template delete failed' });
+        return;
+      }
+
+      setTemplates((prev) => prev.filter((template) => template.id !== selectedTemplateId));
+      setSelectedTemplateId('');
+      toast({ title: 'Template deleted' });
+    } catch (error) {
+      console.error('Failed to delete template:', error);
+      toast({ variant: 'destructive', title: 'Template delete failed' });
+    }
+  };
 
   async function onSubmit(data: OfferFormValues) {
     const includedFlagsObject = data.includedFlags.reduce((acc, flag) => {
@@ -73,11 +202,47 @@ export default function OfferForm({ rfq, onFinished }: OfferFormProps) {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 max-h-[70vh] overflow-y-auto p-1 pr-4">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 max-h-[70vh] overflow-y-auto p-1 pr-2 md:pr-4">
+        <div className="rounded-xl border border-border bg-slate-50 p-3 space-y-3">
+          <p className="text-sm font-medium text-slate-800">Offer templates</p>
+          <div className="grid gap-2 sm:grid-cols-[1fr_auto_auto_auto]">
+            <Select value={selectedTemplateId} onValueChange={setSelectedTemplateId}>
+              <SelectTrigger>
+                <SelectValue placeholder={loadingTemplates ? 'Loading templates...' : 'Select template'} />
+              </SelectTrigger>
+              <SelectContent>
+                {templates.map((template) => (
+                  <SelectItem key={template.id} value={template.id}>
+                    {template.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                const template = templates.find((item) => item.id === selectedTemplateId);
+                if (template) applyTemplate(template);
+              }}
+              disabled={!selectedTemplateId}
+            >
+              Apply
+            </Button>
+            <Button type="button" variant="outline" onClick={handleSaveAsTemplate} disabled={savingTemplate}>
+              {savingTemplate ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+              Save current
+            </Button>
+            <Button type="button" variant="outline" onClick={handleDeleteTemplate} disabled={!selectedTemplateId}>
+              <Trash2 className="mr-2 h-4 w-4" />
+              Delete
+            </Button>
+          </div>
+        </div>
         <FormField control={form.control} name="title" render={({ field }) => (
           <FormItem><FormLabel>Offer Title</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
         )} />
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid gap-4 sm:grid-cols-2">
             <FormField control={form.control} name="price" render={({ field }) => (
                 <FormItem><FormLabel>Price</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
             )} />
@@ -88,7 +253,7 @@ export default function OfferForm({ rfq, onFinished }: OfferFormProps) {
         <FormField control={form.control} name="validUntil" render={({ field }) => (
             <FormItem className="flex flex-col"><FormLabel>Valid Until</FormLabel>
             <Popover><PopoverTrigger asChild><FormControl>
-                <Button variant={"outline"} className={cn("w-[240px] pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
+                <Button variant={"outline"} className={cn("w-full pl-3 text-left font-normal rounded-xl", !field.value && "text-muted-foreground")}>
                 {field.value ? format(field.value, "PPP") : <span>Pick a date</span>}
                 <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                 </Button>
@@ -97,7 +262,7 @@ export default function OfferForm({ rfq, onFinished }: OfferFormProps) {
             </Popover><FormMessage />
             </FormItem>
         )} />
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid gap-4 sm:grid-cols-2">
             <FormField control={form.control} name="terms" render={({ field }) => (
                 <FormItem><FormLabel>Delivery Terms</FormLabel><FormControl><Input placeholder="e.g. EXW, DDP" {...field} /></FormControl><FormMessage /></FormItem>
             )} />
@@ -130,7 +295,7 @@ export default function OfferForm({ rfq, onFinished }: OfferFormProps) {
         )} />
 
         <div className="flex justify-end pt-4">
-          <Button type="submit" disabled={form.formState.isSubmitting}>
+          <Button className="rounded-xl" type="submit" disabled={form.formState.isSubmitting}>
             {form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Send Offer
           </Button>

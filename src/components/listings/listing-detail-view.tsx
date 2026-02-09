@@ -207,7 +207,7 @@ export default function ListingDetailView({ listingId }: { listingId: string }) 
         </div>
 
         <div className="md:col-span-1">
-          <div className="sticky top-24 space-y-6">
+          <div className="sticky top-32 space-y-6">
             <Card className="shadow-lg">
               <CardHeader>
                 <CardTitle>Summary</CardTitle>

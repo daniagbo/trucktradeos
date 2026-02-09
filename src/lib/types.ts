@@ -59,18 +59,31 @@ export type Listing = {
 
 export type UserAccountType = 'individual' | 'company';
 export type UserRole = 'member' | 'admin';
+export type TeamRole = 'requester' | 'approver' | 'manager' | 'owner';
 
 export type User = {
   id: string;
   email: string;
   passwordHash: string; // In a real app, this would never be sent to the client
+  mustChangePassword?: boolean;
   role: UserRole;
+  teamRole?: TeamRole;
   accountType: UserAccountType;
   name: string;
   phone?: string;
   country?: string;
   companyName?: string;
   vat?: string;
+  headline?: string;
+  bio?: string;
+  website?: string;
+  linkedinUrl?: string;
+  organizationId?: string;
+  organization?: {
+    id: string;
+    name: string;
+    slug: string;
+  } | null;
   createdAt: string;
 };
 
@@ -123,6 +136,14 @@ export type RFQEvent = {
 };
 
 export type RFQUrgency = 'Normal' | 'Urgent';
+export type ServiceTier = 'Standard' | 'Priority' | 'Enterprise';
+export type ServicePackage = 'Core' | 'Concierge' | 'Command';
+export type PackageAddon =
+  | 'Verification'
+  | 'Logistics'
+  | 'Financing'
+  | 'Compliance'
+  | 'DedicatedManager';
 
 export type RFQ = {
   id: string;
@@ -138,9 +159,17 @@ export type RFQ = {
   deliveryCountry: string;
   pickupDeadline?: Date;
   urgency: RFQUrgency;
+  serviceTier?: ServiceTier;
+  servicePackage?: ServicePackage;
+  packageAddons?: PackageAddon[];
+  slaTargetHours?: number;
   requiredDocuments: string[];
   conditionTolerance: string;
   notes?: string;
+  businessGoal?: string;
+  riskTolerance?: 'Low' | 'Medium' | 'High';
+  budgetConfidence?: 'Fixed' | 'Flexible' | 'Exploratory';
+  mandateCompleteness?: number;
   status: RFQStatus;
   createdAt: string;
   // Phase 3
@@ -148,6 +177,37 @@ export type RFQ = {
   // Phase 4
   closeReason?: string;
   events: RFQEvent[];
+};
+
+export type Deliverable = {
+  id: string;
+  rfqId: string;
+  type:
+    | 'SOURCING_BRIEF'
+    | 'SUPPLIER_SHORTLIST'
+    | 'NEGOTIATION_NOTE'
+    | 'CLOSE_MEMO'
+    | 'BENCHMARK_REPORT'
+    | 'SUPPLIER_COMPARISON';
+  status: 'TODO' | 'IN_PROGRESS' | 'DONE' | 'BLOCKED';
+  title: string;
+  summary?: string;
+  dueAt?: string;
+  completedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type OpsTask = {
+  id: string;
+  title: string;
+  details?: string;
+  status: 'OPEN' | 'ACKNOWLEDGED' | 'RESOLVED';
+  priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+  source: string;
+  rfqId?: string;
+  dueAt?: string;
+  createdAt: string;
 };
 
 export type RFQMessage = {
@@ -181,4 +241,3 @@ export type SavedSearch = {
   createdAt: string;
   lastChecked?: string;
 };
-

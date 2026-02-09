@@ -1,5 +1,6 @@
 'use client';
 import ListingForm from "@/components/admin/listing-form";
+import AdminAuditTimeline from "@/components/admin/audit-timeline";
 import { useAuth } from "@/hooks/use-auth";
 import { useListings } from "@/hooks/use-listings";
 import { useRouter } from "next/navigation";
@@ -26,8 +27,8 @@ export default function EditListingPage(props: { params: Promise<{ id: string }>
 
     if (loading || !user || user.role !== 'admin' || !listing) {
         return (
-            <div className="container py-8">
-                <div className="max-w-4xl mx-auto">
+            <div className="container mx-auto px-4 py-10">
+                <div className="mx-auto max-w-4xl">
                     <Skeleton className="h-10 w-1/3 mb-8" />
                     <div className="space-y-8">
                         <Skeleton className="h-64 w-full" />
@@ -40,14 +41,17 @@ export default function EditListingPage(props: { params: Promise<{ id: string }>
     }
 
     return (
-        <div className="container py-8">
-            <div className="max-w-4xl mx-auto">
+        <div className="container mx-auto px-4 py-10">
+            <div className="mx-auto max-w-4xl">
+                <div className="mb-6 rounded-3xl border border-border bg-gradient-to-r from-slate-900 via-slate-800 to-sky-900 p-7 text-white md:p-9">
+                    <h1 className="text-3xl font-extrabold tracking-tight">Edit listing</h1>
+                    <p className="mt-2 text-sm text-slate-200 md:text-base">Update the details for: {listing.title}</p>
+                </div>
                 <div>
-                    <h1 className="font-headline text-3xl font-bold tracking-tight">Edit Listing</h1>
-                    <p className="text-muted-foreground">Update the details for: {listing.title}</p>
+                    <ListingForm existingListing={listing} />
                 </div>
                 <div className="mt-8">
-                    <ListingForm existingListing={listing} />
+                    <AdminAuditTimeline entityId={listing.id} scope="listing" />
                 </div>
             </div>
         </div>

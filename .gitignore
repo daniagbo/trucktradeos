@@ -16,6 +16,7 @@
 # next.js
 /.next/
 /out/
+.next_backup_*/
 
 # production
 /build
@@ -44,3 +45,6 @@ next-env.d.ts
 firebase-debug.log
 firestore-debug.log
 /src/generated/prisma
+
+# fleetsource (Vite)
+/fleetsource/dist

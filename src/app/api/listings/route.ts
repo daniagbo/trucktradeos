@@ -2,6 +2,7 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { Prisma } from '@prisma/client';
+import { apiError } from '@/lib/api/errors';
 
 export async function GET(request: Request) {
     try {
@@ -113,6 +114,6 @@ export async function GET(request: Request) {
 
     } catch (error) {
         console.error('Failed to fetch listings:', error);
-        return NextResponse.json({ message: 'Failed to fetch listings' }, { status: 500 });
+        return apiError(500, 'Failed to fetch listings');
     }
 }

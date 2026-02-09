@@ -5,7 +5,7 @@ import AdminRfqsClient from './rfqs-client';
 export default async function AdminRfqsPage() {
     const session = await verifySession();
 
-    if (!session || session.role !== 'admin') {
+    if (!session || (session.role !== 'admin' && session.role !== 'ADMIN')) {
         redirect('/login?next=/admin/rfqs');
     }
 

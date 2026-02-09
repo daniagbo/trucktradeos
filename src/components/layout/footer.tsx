@@ -3,47 +3,41 @@ import { Logo } from '@/components/icons';
 
 export default function Footer() {
   return (
-    <footer className="bg-background border-t border-white/5 pt-16 pb-8">
+    <footer className="border-t border-border bg-background py-12">
       <div className="container mx-auto px-4">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
+        <div className="grid gap-10 md:grid-cols-4">
           <div className="md:col-span-2">
-            <Link href="/" className="flex items-center gap-3 mb-6">
-              <div className="h-10 w-10 rounded-xl bg-primary flex items-center justify-center">
-                <Logo className="text-white h-6 w-6" />
+            <Link href="/" className="mb-4 flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary">
+                <Logo className="h-6 w-6 text-white" />
               </div>
-              <span className="font-bold font-headline text-2xl tracking-tight">TruckTradeOS</span>
+              <span className="text-xl font-bold tracking-tight text-slate-900">FleetSource</span>
             </Link>
-            <p className="text-muted-foreground max-w-sm leading-relaxed">
-              The professional standard for heavy equipment commerce. Scaling logistics through verified data and trusted partnerships.
+            <p className="max-w-md text-sm leading-6 text-slate-600">
+              Built for equipment sourcing teams that need transparent listings, tracked RFQs, and reliable cross-border execution.
             </p>
           </div>
           <div>
-            <h4 className="font-bold mb-6 text-sm uppercase tracking-widest text-primary/80">Platform</h4>
-            <nav className="flex flex-col gap-4">
-              <Link href="/listings" className="text-muted-foreground hover:text-primary transition-colors">Inventory</Link>
-              <Link href="#" className="text-muted-foreground hover:text-primary transition-colors">Auctions</Link>
-              <Link href="#" className="text-muted-foreground hover:text-primary transition-colors">Financing</Link>
-              <Link href="#" className="text-muted-foreground hover:text-primary transition-colors">Sell Equipment</Link>
+            <h4 className="mb-4 text-xs font-semibold uppercase tracking-widest text-slate-500">Platform</h4>
+            <nav className="flex flex-col gap-2 text-sm">
+              <Link href="/listings" className="text-slate-600 transition hover:text-primary">Inventory</Link>
+              <Link href="/bulk-sourcing" className="text-slate-600 transition hover:text-primary">Bulk Sourcing</Link>
+              <Link href="/dashboard" className="text-slate-600 transition hover:text-primary">Dashboard</Link>
+              <Link href="/dashboard/rfqs" className="text-slate-600 transition hover:text-primary">My Requests</Link>
             </nav>
           </div>
           <div>
-            <h4 className="font-bold mb-6 text-sm uppercase tracking-widest text-primary/80">Company</h4>
-            <nav className="flex flex-col gap-4">
-              <Link href="#" className="text-muted-foreground hover:text-primary transition-colors">About Us</Link>
-              <Link href="#" className="text-muted-foreground hover:text-primary transition-colors">Compliance</Link>
-              <Link href="#" className="text-muted-foreground hover:text-primary transition-colors">Terms</Link>
-              <Link href="#" className="text-muted-foreground hover:text-primary transition-colors">Privacy</Link>
+            <h4 className="mb-4 text-xs font-semibold uppercase tracking-widest text-slate-500">Account</h4>
+            <nav className="flex flex-col gap-2 text-sm">
+              <Link href="/login" className="text-slate-600 transition hover:text-primary">Sign in</Link>
+              <Link href="/register" className="text-slate-600 transition hover:text-primary">Register</Link>
+              <Link href="/profile" className="text-slate-600 transition hover:text-primary">Profile</Link>
             </nav>
           </div>
         </div>
-        <div className="pt-8 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-4">
-          <div className="text-sm text-muted-foreground">
-            © {new Date().getFullYear()} TruckTradeOS. All rights reserved.
-          </div>
-          <div className="flex gap-6">
-            <Link href="#" className="text-muted-foreground hover:text-primary transition-colors">Twitter</Link>
-            <Link href="#" className="text-muted-foreground hover:text-primary transition-colors">LinkedIn</Link>
-          </div>
+        <div className="mt-10 flex flex-col items-center justify-between gap-3 border-t border-border pt-6 text-sm text-slate-500 md:flex-row">
+          <div>© {new Date().getFullYear()} FleetSource. All rights reserved.</div>
+          <div className="text-xs uppercase tracking-wide text-slate-400">Built with Next.js + Prisma</div>
         </div>
       </div>
     </footer>

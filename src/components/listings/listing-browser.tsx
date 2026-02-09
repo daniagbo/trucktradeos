@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { useListings } from '@/hooks/use-listings';
 import { useAuth } from '@/hooks/use-auth';
 import type { Listing } from '@/lib/types';
@@ -10,7 +10,7 @@ import FilterSidebar from './filter-sidebar';
 import { Skeleton } from '../ui/skeleton';
 import { Button } from '../ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Filter, SearchX, LayoutGrid, List, X } from 'lucide-react';
+import { Filter, SearchX, LayoutGrid, List, X, ShieldCheck, Globe, CheckCircle2 } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger } from '../ui/sheet';
 
 type Filters = {
@@ -25,11 +25,13 @@ type Filters = {
   type: string[]; // 'single' | 'lot'
   quantityMin: number | null;
   isExportReady: boolean;
+  verificationStatus: string[];
   availabilityStatus: string[];
 };
 
 export default function ListingBrowser() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const { listings, loading: listingsLoading } = useListings();
   const { user, loading: authLoading } = useAuth();
   const isMember = !!user;
@@ -49,6 +51,7 @@ export default function ListingBrowser() {
     type: [],
     quantityMin: null,
     isExportReady: false,
+    verificationStatus: [],
     availabilityStatus: [],
   });
 
@@ -66,9 +69,28 @@ export default function ListingBrowser() {
       type: searchParams.getAll('type'),
       quantityMin: searchParams.get('quantityMin') ? Number(searchParams.get('quantityMin')) : null,
       isExportReady: searchParams.get('isExportReady') === 'true',
+      verificationStatus: searchParams.getAll('verificationStatus'),
       availabilityStatus: searchParams.getAll('availabilityStatus'),
     });
   }, [searchParams]);
+
+  useEffect(() => {
+    const params = new URLSearchParams();
+    Object.entries(filters).forEach(([key, value]) => {
+      if (Array.isArray(value)) {
+        value.forEach((entry) => {
+          if (entry) params.append(key, String(entry));
+        });
+      } else if (value !== null && value !== '' && value !== false) {
+        params.set(key, String(value));
+      }
+    });
+    const nextQuery = params.toString();
+    const currentQuery = searchParams.toString();
+    if (nextQuery !== currentQuery) {
+      router.replace(nextQuery ? `/listings?${nextQuery}` : '/listings', { scroll: false });
+    }
+  }, [filters, router, searchParams]);
 
   // Combined Filter & Sort Logic
   const filteredListings = useMemo(() => {
@@ -98,6 +120,10 @@ export default function ListingBrowser() {
       if (filters.type.length > 0 && !filters.type.includes(listing.type)) return false;
       if (filters.quantityMin && listing.quantity < filters.quantityMin) return false;
       if (filters.isExportReady && !listing.isExportReady) return false;
+      if (
+        filters.verificationStatus.length > 0 &&
+        !filters.verificationStatus.includes((listing.verificationStatus || '').toLowerCase())
+      ) return false;
       if (filters.availabilityStatus.length > 0 && !filters.availabilityStatus.includes(listing.availabilityStatus)) return false;
 
       return true;
@@ -119,7 +145,7 @@ export default function ListingBrowser() {
   const handleClearFilters = () => {
     setFilters({
       search: '', category: [], brand: [], yearMin: null, yearMax: null, country: [], condition: [],
-      type: [], quantityMin: null, isExportReady: false, availabilityStatus: []
+      type: [], quantityMin: null, isExportReady: false, verificationStatus: [], availabilityStatus: []
     });
   };
 
@@ -150,6 +176,7 @@ export default function ListingBrowser() {
     filters.type.forEach(t => active.push({ key: 'type', label: t === 'lot' ? 'Bulk / Lot' : 'Single Unit', value: t }));
     if (filters.quantityMin) active.push({ key: 'quantityMin', label: `Min Qty: ${filters.quantityMin}`, value: filters.quantityMin });
     if (filters.isExportReady) active.push({ key: 'isExportReady', label: 'Export Ready', value: true });
+    filters.verificationStatus.forEach(v => active.push({ key: 'verificationStatus', label: v === 'verified' ? 'Verified' : v, value: v }));
     filters.availabilityStatus.forEach(s => active.push({ key: 'availabilityStatus', label: s.charAt(0).toUpperCase() + s.slice(1), value: s }));
 
     if (filters.yearMin || filters.yearMax) {
@@ -162,11 +189,22 @@ export default function ListingBrowser() {
     return active;
   }, [filters]);
 
+  const toggleQuickFilter = (key: 'verificationStatus' | 'availabilityStatus', value: string) => {
+    setFilters((prev) => {
+      const current = prev[key];
+      const exists = current.includes(value);
+      return {
+        ...prev,
+        [key]: exists ? current.filter((item) => item !== value) : [...current, value],
+      };
+    });
+  };
+
 
   return (
     <div className="min-h-screen bg-background pb-20">
       {/* Sticky Header */}
-      <div className="sticky top-[64px] z-30 bg-background/80 backdrop-blur-md border-b border-border shadow-sm">
+      <div className="sticky top-20 z-30 bg-background/80 backdrop-blur-md border-b border-border shadow-sm">
         <div className="container py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
 
           {/* Left: Count & Mobile Trigger */}
@@ -228,12 +266,36 @@ export default function ListingBrowser() {
       <div className="container pt-8 flex gap-8">
         {/* Desktop Sidebar */}
         <aside className="hidden md:block w-64 shrink-0">
-          <div className="sticky top-32">
+          <div className="sticky top-40">
             <FilterSidebar listings={listings} filters={filters} setFilters={setFilters} />
           </div>
         </aside>
 
         <main className="flex-1 min-w-0">
+          <div className="mb-4 flex flex-wrap gap-2">
+            <button
+              onClick={() => toggleQuickFilter('verificationStatus', 'verified')}
+              className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-semibold ${filters.verificationStatus.includes('verified') ? 'border-primary bg-primary/10 text-primary' : 'border-border bg-card text-slate-600 hover:bg-muted/40'}`}
+            >
+              <ShieldCheck className="h-3.5 w-3.5" />
+              Verified only
+            </button>
+            <button
+              onClick={() => setFilters((prev) => ({ ...prev, isExportReady: !prev.isExportReady }))}
+              className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-semibold ${filters.isExportReady ? 'border-primary bg-primary/10 text-primary' : 'border-border bg-card text-slate-600 hover:bg-muted/40'}`}
+            >
+              <Globe className="h-3.5 w-3.5" />
+              Export ready
+            </button>
+            <button
+              onClick={() => toggleQuickFilter('availabilityStatus', 'available')}
+              className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-semibold ${filters.availabilityStatus.includes('available') ? 'border-primary bg-primary/10 text-primary' : 'border-border bg-card text-slate-600 hover:bg-muted/40'}`}
+            >
+              <CheckCircle2 className="h-3.5 w-3.5" />
+              Available now
+            </button>
+          </div>
+
           {/* Active Filters */}
           {activeFilters.length > 0 && (
             <div className="flex flex-wrap items-center gap-2 mb-6">

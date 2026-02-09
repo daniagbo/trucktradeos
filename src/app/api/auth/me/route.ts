@@ -1,9 +1,9 @@
-import { verifySession } from '@/lib/session'
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { verifySessionFromRequest } from '@/lib/session'
 
-export async function GET() {
-    const session = await verifySession()
+export async function GET(request: Request) {
+    const session = await verifySessionFromRequest(request)
 
     if (!session || !session.userId) {
         return NextResponse.json({ user: null })
@@ -11,7 +11,12 @@ export async function GET() {
 
     // Fetch real user from DB
     const user = await db.user.findUnique({
-        where: { id: session.userId }
+        where: { id: session.userId },
+        include: {
+            organization: {
+                select: { id: true, name: true, slug: true }
+            }
+        }
     })
 
     if (!user) {
