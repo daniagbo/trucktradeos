@@ -26,9 +26,14 @@ Copy the connection string as `DATABASE_URL` (Prisma expects a standard Postgres
 This repo includes an initial migration under `prisma/migrations/`.
 
 Vercel runs `npm run build`, which runs:
-- `prisma migrate deploy`
 - `prisma generate`
 - `next build`
+
+Migrations are intentionally NOT run during Vercel builds (to avoid deployment failures when the DB
+is not reachable from the build environment). Run migrations from a machine/runner that can reach
+the database:
+
+- `npm run db:migrate:deploy`
 
 ### 4) Seeding / first admin user
 
